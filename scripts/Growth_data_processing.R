@@ -270,7 +270,7 @@ weight <- weight_raw %>%
 
 
 # convert buoyant weight to weight using the seacarb package 
-# according to the method ofJokiel et al. 1978 and Davies 1989
+# according to the method of Jokiel et al. 1978 and Davies 1989
 real_weight <- function(buoyant_weight, S, T, P = 0, rho_aragonite = 2930){
   
   x <- seacarb::rho(S = S, T = T, P = P)
@@ -308,8 +308,8 @@ growth_3D$necrosis_0 <- (100/growth_3D$surf_t0)*(growth_3D$surf_t0-growth_3D$liv
 growth_3D$necrosis_1 <- (100/growth_3D$surf_t1)*(growth_3D$surf_t1-growth_3D$living_t1)
 growth_3D$necrosis_2 <- (100/growth_3D$surf_t2)*(growth_3D$surf_t2-growth_3D$living_t2)
 growth_3D$necrosis_3 <- (100/growth_3D$surf_t3)*(growth_3D$surf_t3-growth_3D$living_t3)
-# It is necessary to check whether all negative values are related to necrosis or whether negative growth happened
-# For further assessment of necrosis see Scripts > Necrosis
+# It is necessary to check whether all negative values are related to necrosis or whether other sources are responsible
+# For further assessment of necrosis see Scripts > Necrosis_statistics
 
 ### --- 4.3.2. Volume ----
 # growth in volume (cm³ per cm²)
@@ -329,10 +329,7 @@ growth_rates <- growth_rates %>%
          growth_surf_3 = (growth_surf_3/days_3) * 28,
          growth_vol_1 = (growth_vol_1/days_1) * 28,
          growth_vol_2 = (growth_vol_2/days_2) * 28,
-         growth_vol_3 = (growth_vol_3/days_3) * 28,
-         necrosis_1 = (necrosis_1/days_1) * 28,
-         necrosis_2 = (necrosis_2/days_2) * 28,
-         necrosis_3 = (necrosis_3/days_3) * 28)
+         growth_vol_3 = (growth_vol_3/days_3) * 28)
 
 
 ### --- 4.3.4 include weight data ----
@@ -393,7 +390,7 @@ weight_rates <- all_growth %>%
 
 
 # necrosis
-necrosis_rates <- all_growth %>%
+necrosis_percent <- all_growth %>%
   select(c(ID, spec, col, tank, treat, conc,
            necrosis_0, necrosis_1, necrosis_2, necrosis_3)) %>%
   # bring tables into long format
@@ -414,4 +411,4 @@ necrosis_rates <- all_growth %>%
 write_rds(surface_rates, "processed/surface_growth.rds")
 write_rds(volume_rates, "processed/volume_growth.rds")
 write_rds(weight_rates, "processed/weight_growth.rds")
-write_rds(necrosis_rates, "processed/necrosis_percent.rds")
+write_rds(necrosis_percent, "processed/necrosis_percent.rds")
