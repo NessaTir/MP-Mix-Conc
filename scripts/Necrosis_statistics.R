@@ -2,32 +2,19 @@
   # This script focuses on the assessment of coral necrosis.
   # Occurence of necrosis was assessed visually as yes/no for every sampling timepoint
   # Relative necrosis was measured using 3D Scanning
-  
+  # This script builds up on data tables produced in the script 'Growth_data_processing'
   
 # ----- 2. load in needed packages -------
-# to easily clean data
+# to easily clean data, to read in .rds files 
 library(tidyverse)
 
 # to easily read in all data files
 library(readxl)
 
+# to conduct the exact fisher test function fisher_test
+library(rstatix)
+
 library(dplyr)
-
-
-
-library(lme4)
-library(multcomp)
-library(viridis)
-library(car) # for glht
-library(tidyverse) # to read in table with read_rds
-library(readxl)
-library(rstatix) # statistik helfer
-library(broomExtra) # write models like lm as tibble
-library(magrittr) # A Forward-Pipe Operator
-
-library(ggpubr)
-library(skimr) # to skim() - check for missing data
-library(performance) # check_normality
 
 
 # ----- 3. Read in needed data files ----- 
