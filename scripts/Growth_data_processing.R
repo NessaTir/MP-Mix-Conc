@@ -1,6 +1,7 @@
 # ----- 1. Explanation of this script ----
 # This script focuses on the calculation of the corals growth rates. Growth was measured in
 #   a) Living tissue area growth
+#       --> Differences between gross surface area and net tissue area might be caused by necrosis (analyzed in 'Necrosis_statistics')
 #   b) Volume growth
 #   c) Calcification growth
 
