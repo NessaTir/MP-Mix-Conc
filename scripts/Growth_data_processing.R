@@ -6,7 +6,7 @@
 #   c) Calcification growth
 
 
-# ----- 2. load in needed packages -------
+# ----- 2. Load in needed packages -------
 # to easily clean data
 library(tidyverse)
 
