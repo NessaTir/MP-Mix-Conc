@@ -4,7 +4,7 @@
   # Relative necrosis was measured using 3D Scanning
   # This script builds up on data tables produced in the script 'Growth_data_processing'
   
-# ----- 2. load in needed packages -------
+# ----- 2. Load in needed packages -------
 # to easily clean data, to read in .rds files 
 library(tidyverse)
 
