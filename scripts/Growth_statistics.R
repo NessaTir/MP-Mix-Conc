@@ -30,17 +30,6 @@ library(rstatix)
 library(car)
 
 
-
-# to easily read in all data files
-#library(readxl)
-#library(tidyr)
-#library(readxl)
-#library(ggplot2)
-#library(viridis)
-#library(ggpubr)
-
-
-
 # ---- 3. Read in needed data files --------------------------------------------
 ##---- 3.1. Surface rates ------------------------------------------------------
 surface <- read_rds("processed/surface_growth.rds") %>%
