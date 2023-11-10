@@ -548,6 +548,14 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 write_rds(Polyps, "processed/polyp_activity.rds")
 
 ## ---- 6.2. Tables of summary -------------------------------------------------
+# create a table to summarize the mean polyp activity for P. verrucosa
+Pve <- subset(Polyps, spec == "Pve")
+Pve_sum <- Pve %>%
+  group_by(tp, ID, conc, col) %>%
+  get_summary_stats(ranks, type = "mean")
+
+write_csv2(Pve_sum, "out/polyp_mean_Pve.csv")
+
 # create a table to summarize the mean polyp activity for S. pistillata
 Spi <- subset(Polyps, spec == "Spi")
 Spi_sum <- Spi %>%
@@ -555,11 +563,3 @@ Spi_sum <- Spi %>%
   get_summary_stats(ranks, type = "mean")
 
 write_csv2(Spi_sum, "out/polyp_mean_Spi.csv")
-
-# create a table to summarize the mean polyp activity for P. verrucosa
-Pve <- subset(Polyps, spec == "Pve")
-Pve_sum <- Pve %>%
-  group_by(tp, ID, conc, col) %>%
-  get_summary_stats(ranks, type = "mean")
-
-write_csv2(Pve_sum, "out/polyp_mean_Spi.csv")
