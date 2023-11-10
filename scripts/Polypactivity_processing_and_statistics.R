@@ -554,7 +554,7 @@ Spi_sum <- Spi %>%
   group_by(tp, ID, conc, col) %>%
   get_summary_stats(ranks, type = "mean")
 
-write_csv2(Spi_sum, "processed/polyp_mean_Spi.csv")
+write_csv2(Spi_sum, "out/polyp_mean_Spi.csv")
 
 # create a table to summarize the mean polyp activity for P. verrucosa
 Pve <- subset(Polyps, spec == "Pve")
@@ -562,4 +562,4 @@ Pve_sum <- Pve %>%
   group_by(tp, ID, conc, col) %>%
   get_summary_stats(ranks, type = "mean")
 
-write_csv2(Pve_sum, "processed/polyp_mean_Spi.csv")
+write_csv2(Pve_sum, "out/polyp_mean_Spi.csv")
