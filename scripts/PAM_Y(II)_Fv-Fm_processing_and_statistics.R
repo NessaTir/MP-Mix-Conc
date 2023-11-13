@@ -29,15 +29,6 @@ library(car)
 
 
 
-#library(readxl)
-#library(qqplotr) # für qqplot mit ggplot, pipe bar
-#library(broomExtra) # write models like lm as tibble
-#library(magrittr) # A Forward-Pipe Operator
-#library(dplyr)
-#library(ggpubr)
-
-
-
 # ---- 3. Read in needed data files --------------------------------------------
 ## --- 3.1. Coral identity table -----------------------------------------------
 # read in list with overview of all corals used and their treatments etc.
