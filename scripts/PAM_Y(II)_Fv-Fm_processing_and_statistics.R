@@ -864,4 +864,4 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 write_rds(light_all, "processed/light_all.rds")
 
 ## ---- 6.2. Table of all dark adapted PAM data --------------------------------
-write_rds(dark_all, "processed/dark_all")
+write_rds(dark_all, "processed/dark_all.rds")
