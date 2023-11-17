@@ -98,7 +98,7 @@ levels(Necrosis$treat)
 # ---- 4.1. Categorize severity of necrosis ----
 # according to Marshall and Schuttenberg 2006
 # low: 1-10%
-# moderate: 0-50%
+# moderate: > 10-50%
 # high: > 50%
 Necrosis_category <- Necrosis %>% 
   mutate(cat = case_when(necro_per >= 50 ~ "high",
