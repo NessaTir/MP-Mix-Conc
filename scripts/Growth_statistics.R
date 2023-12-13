@@ -339,21 +339,32 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 # create a subset with data of Pve
 Pve_vol <- subset(volume, spec == "Pve")
 
-# LMER didn't show a good fit, therefore GLMER is used
-model_Pve <- glmer(((volume_growth+100)) ~ conc + (1|col) + (1|time), family = "poisson", data = Pve_vol)
-# summary of tested with the GLMER differences
+hist(log((Pve_vol$volume_growth+0.02)))
+
+# Example usage:
+# Assuming 'your_data' is the vector or column containing your data
+Pve_vol$volume_growth_clean <- remove_outliers(Pve_vol$volume_growth)
+
+
+# LMER shows a good fit, therefore GLMER is used
+model_Pve <- lmer(log(((volume_growth_clean+0.02))) ~ conc + (1|col) + (1|time), data = Pve_vol)
+# summary of tested with the LMER differences
 cftest(model_Pve)
+
+# inspect residuals
+qqPlot(residuals(model_Pve))          # good fit
+shapiro_test(residuals(model_Pve))    # p > 0.05 = Non-Normality
+# OUTPUT: # A tibble: 1 x 3
+# variable                statistic p.value
+# <chr>                       <dbl>   <dbl>
+# 1 residuals(model_Pve)     0.991  0.0986
+check_normality(model_Pve)
+# OK: residuals appear as normally distributed (p = 0.101).
+check_heteroscedasticity(model_Pve)
+# OK: Error variance appears to be homoscedastic (p = 0.976).
+
 # OUTPUT:
-# Simultaneous Tests for General Linear Hypotheses
-# Fit: glmer(formula = ((volume_growth + 100)) ~ conc + (1 | col) + 
-#              (1 | time), data = Pve_vol, family = "poisson")
-# Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)    
-# (Intercept) == 0  4.605e+00  7.071e-01   6.513 7.38e-11 ***
-#   conc == 0        -8.249e-07  1.558e-04  -0.005    0.996    
-# ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# (Univariate p values reported)
+#Better update yourself, I messed it up :D
 
 
 
