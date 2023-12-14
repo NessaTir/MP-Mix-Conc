@@ -16,6 +16,10 @@ library(rstatix)
 
 library(dplyr)
 
+# for statistical testing
+library(multcomp)
+library(lme4)
+
 
 # ----- 3. Read in needed data files ----- 
 # Occurence of necrosis for each coral and each sampling timepoint
@@ -42,7 +46,7 @@ Necro_occurence <- Necro_occurence %>%
   # create a new column to get a clean merge
   unite(ID_tp, c(ID, tp), sep="_", remove=FALSE) %>%
   # leave out some columns to have a cleaner merge with the percent table
-  select(-ID, -spec, -col, -origin, -tank, -tp, -treat, -conc)
+  select(-ID, -spec, -col, -origin, -tank, -tp, -treat)
 Necro_percent <- Necro_percent %>%
   # create a new column to get a clean merge
   unite(ID_tp, c(ID, tp), sep="_", remove=FALSE) %>%
@@ -55,7 +59,9 @@ Necrosis <-   merge(Necro_percent, Necro_occurence, by = 'ID_tp', all.x = TRUE) 
   # unite spec, col and tank to get ID
   unite(ID, c(spec, col, tank), sep="_", remove=FALSE) %>%
   # make timepoint column numeric for further analyses
-  mutate(tp = as.numeric(tp))
+  mutate(tp = as.numeric(tp)) %>% 
+  # make concentration column numeric for further analyses
+  mutate(conc = as.numeric(conc))
 
 # add treatment info to table
 Necrosis <- Necrosis %>% 
@@ -93,6 +99,34 @@ Necrosis$necro_per <- ifelse(is.na(Necrosis$necro_per),
 Necrosis$treat <- factor(Necrosis$treat, 
                             levels = c("control", "0.1", "1", "10", "100"))
 levels(Necrosis$treat)
+
+
+# create a subset with data of Pve
+Spi_necrosis <- subset(Necrosis, spec == "Spi")
+Spi_necrosis <- subset(Necrosis, tp == "3")
+
+
+
+str(Spi_necrosis)
+
+hist((log(Spi_necrosis$necrosis+1)))
+
+# LMER shows a good fit, therefore GLMER is used
+model_Spi <- glmer(log(necrosis+1) ~ conc + (1|col), family="poisson", data = Spi_necrosis)
+# summary of tested with the LMER differences
+cftest(model_Spi)
+
+# inspect residuals
+qqPlot(residuals(model_Pve))          # good fit
+shapiro_test(residuals(model_Pve))    # p > 0.05 = Non-Normality
+# OUTPUT: # A tibble: 1 x 3
+# variable                statistic p.value
+# <chr>                       <dbl>   <dbl>
+# 1 residuals(model_Pve)     0.991  0.0986
+check_normality(model_Pve)
+# OK: residuals appear as normally distributed (p = 0.101).
+check_heteroscedasticity(model_Pve)
+# OK: Error variance appears to be homoscedastic (p = 0.976).
 
 
 # ---- 4.1. Categorize severity of necrosis ----
