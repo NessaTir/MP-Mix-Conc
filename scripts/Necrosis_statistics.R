@@ -19,7 +19,8 @@ library(dplyr)
 # for statistical testing
 library(multcomp)
 library(lme4)
-
+# check model fits visually using qqplot
+library(car)
 
 # ----- 3. Read in needed data files ----- 
 # Occurence of necrosis for each coral and each sampling timepoint
@@ -79,6 +80,21 @@ Necrosis <- Necrosis %>%
                            tank == 9 ~ "10",
                            tank == 14 ~ "10",
                            TRUE ~ "100"))
+Necrosis <- Necrosis %>% 
+  mutate(tank = as.factor(tank),
+         treatment = case_when(tank == 1 ~ "control",
+                           tank == 6 ~ "control",
+                           tank == 11 ~ "control",
+                           tank == 2 ~ "A",
+                           tank == 7 ~ "A",
+                           tank == 12 ~ "A",
+                           tank == 3 ~ "B",
+                           tank == 8 ~ "B",
+                           tank == 13 ~ "B",
+                           tank == 4 ~ "C",
+                           tank == 9 ~ "C",
+                           tank == 14 ~ "C",
+                           TRUE ~ "D"))
 
 # create a new column (necro_per) for necrosis corrected for occurence
 Necrosis <- Necrosis %>%
@@ -101,32 +117,68 @@ Necrosis$treat <- factor(Necrosis$treat,
 levels(Necrosis$treat)
 
 
-# create a subset with data of Pve
+# create a subset with data of Spi
 Spi_necrosis <- subset(Necrosis, spec == "Spi")
-Spi_necrosis <- subset(Necrosis, tp == "3")
+Spi_necrosis <- subset(Spi_necrosis, tp == "3")
 
-
-
-str(Spi_necrosis)
+str(Spi_necrosis$treat)
 
 hist((log(Spi_necrosis$necrosis+1)))
 
-# LMER shows a good fit, therefore GLMER is used
+# GLMER shows a good fit, therefore GLMER is used
 model_Spi <- glmer(log(necrosis+1) ~ conc + (1|col), family="poisson", data = Spi_necrosis)
 # summary of tested with the LMER differences
 cftest(model_Spi)
 
-# inspect residuals
-qqPlot(residuals(model_Pve))          # good fit
-shapiro_test(residuals(model_Pve))    # p > 0.05 = Non-Normality
-# OUTPUT: # A tibble: 1 x 3
-# variable                statistic p.value
-# <chr>                       <dbl>   <dbl>
-# 1 residuals(model_Pve)     0.991  0.0986
-check_normality(model_Pve)
-# OK: residuals appear as normally distributed (p = 0.101).
-check_heteroscedasticity(model_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.976).
+
+# GLMER shows a good fit, therefore GLMER is used
+model_Spi <- glmer(log(necrosis+1) ~ treatment + (1|col), family="poisson", data = Spi_necrosis)
+
+# Tukey comparison all treatments
+summary(glht(model_Spi, linfct = mcp(treatment = "Tukey")))
+
+# Comparison control vs. all MP treatments, missing adjustments
+cftest(model_Spi)
+
+# Alternative approach but could not get it to work with column treat so made a new column treatment
+summary(glht(model_Spi, linfct = mcp(treatment = c("control - A = 0", 
+                                                              "control - B = 0",
+                                                              "control - C = 0",
+                                                              "control - D = 0"
+))), test = adjusted("holm"))
+
+
+# create a subset with data of Pve
+Pve_necrosis <- subset(Necrosis, spec == "Pve")
+Pve_necrosis <- subset(Pve_necrosis, tp == "3")
+
+
+
+str(Pve_necrosis)
+
+hist((log(Pve_necrosis$necrosis+1)))
+
+# LMER shows a good fit, therefore GLMER is used
+model_Pve <- glmer(log(necrosis+1) ~ conc + (1|col), family="poisson", data = Pve_necrosis)
+# summary of tested with the LMER differences
+cftest(model_Pve)
+
+# GLMER shows a good fit, therefore GLMER is used
+model_Pve <- glmer(log(necrosis+1) ~ treatment + (1|col), family="poisson", data = Pve_necrosis)
+
+# Tukey comparison all treatments
+summary(glht(model_Pve, linfct = mcp(treatment = "Tukey")))
+
+# Comparison control vs. all MP treatments, missing adjustments
+cftest(model_Pve)
+
+# Alternative approach but could not get it to work with column treat so made a new column treatment
+summary(glht(model_Pve, linfct = mcp(treatment = c("control - A = 0", 
+                                                   "control - B = 0",
+                                                   "control - C = 0",
+                                                   "control - D = 0"
+))), test = adjusted("holm"))
+
 
 
 # ---- 4.1. Categorize severity of necrosis ----
