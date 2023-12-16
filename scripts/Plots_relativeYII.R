@@ -19,6 +19,7 @@
 library(tidyverse)
 library(readxl)
 library(ggplot2)
+library(ggpmisc)
 
 # bring different plots together
 library("patchwork")
@@ -65,9 +66,71 @@ Necrosis_Bar <- necrosis_rank %>%
 # effective quantum yield
 YII <- read_rds("processed/light_all.rds")
 
-# relative electron transport rate
-rETR <- read_rds("processed/RLC_parameter.rds")
+# standardize each fragment to it's mean value at t0
+YII_0 <- subset(YII, tp== "0")
+YII_0_mean <- YII_0 %>%
+  group_by(ID) %>%
+  get_summary_stats(YII, type = "mean") 
 
+YII_relative <- subset(YII, tp!= "0")
+
+YII_relative <- full_join(YII_relative, YII_0_mean, by="ID")
+
+YII_relative <- YII_relative %>% 
+  mutate(relativeYII = 100/mean*YII) 
+
+# effective quantum yield
+FvFm <- read_rds("processed/dark_all.rds")
+
+# standardize each fragment to it's mean value at t0
+FvFm_0 <- subset(FvFm, tp== "0") %>% 
+  # remove unnecessary columns for clear merge
+  dplyr::select(ID, Fv_Fm) %>% 
+  rename(FvFm_t0 = Fv_Fm) 
+
+FvFm_relative <- subset(FvFm, tp!= "0")
+
+FvFm_relative <- full_join(FvFm_relative, FvFm_0, by="ID")
+
+FvFm_relative <- FvFm_relative %>% 
+  mutate(relativeFvFm = 100/FvFm_t0*Fv_Fm) 
+
+# relative electron transport rate
+rETR <- read_rds("processed/rETR_parameter.rds")%>%
+  rename(Filename = "ID_time") %>%                
+  # clean column names for better merge with other timepoints
+  separate(Filename, c('spec', 'col', 'tank', 'tp')) %>%    
+  unite(ID, c(spec, col, tank), sep="_", remove=FALSE) %>% 
+  # reaname timepoints for clean statistical analyses
+  mutate(tp = case_when(tp == "t0"~ "0",
+                        tp == "t1"~ "1",
+                        tp == "t2"~ "2",
+                        tp == "t3"~ "3"),
+         tp = as.numeric(tp))
+
+# standardize each fragment to it's mean value at t0
+rETRmax_0 <- subset(rETR, tp== "0") %>% 
+  # remove unnecessary columns for clear merge
+  dplyr::select(ID, rETRmax) %>% 
+  rename(rETRmax_t0 = rETRmax) 
+
+rETRmax_relative <- subset(rETR, tp!= "0")
+
+rETRmax_graph <- full_join(rETRmax_relative, rETRmax_0, by="ID")
+
+rETRmax_graph <- rETRmax_graph %>% 
+  mutate(relativerETRmax = 100/rETRmax_t0*rETRmax) 
+
+corals <- read.csv2("in/coral_treatments.csv", sep=",") %>%
+  # modify character of some columns, where necessary
+  mutate(treat = as.factor(treat), # column for categorical model
+         conc = as.numeric(conc)) %>% # column for continuous model 
+  dplyr::select(ID, treat, conc)
+  
+# bring tables of polyp activity together coral information table - wide format
+rETR <-  merge(corals, rETR, by = 'ID', all.x = TRUE)
+rETR$treat <- factor(rETR$treat, 
+                     levels = c("control", "0.1", "1", "10", "100" ))
 
 ## ---- 3.4. Polyp activity ----------------------------------------------------
 Polyps <- read_rds("processed/polyp_activity.rds")
@@ -313,23 +376,12 @@ ggsave("out/polyps.png", plot = polyps,
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
 # ------------- Effective quantum yield
 
-# standardize each fragment to it's mean value at t0
-YII_0 <- subset(YII, tp== "0")
-YII_0_mean <- YII_0 %>%
-  group_by(ID) %>%
-  get_summary_stats(YII, type = "mean") 
 
-YII_relative <- subset(YII, tp!= "0")
-
-YII_graph <- full_join(YII_relative, YII_0_mean, by="ID")
-
-YII_graph <- YII_graph %>% 
-  mutate(relativeYII = 100/mean*YII) 
 
 # exclude t0
 #YII_graph <- subset(YII, tp!= "0")
 
-YII_plot <- ggplot(YII_graph, aes(x = tp, y = relativeYII)) +
+YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = relativeYII, group = treat, color = treat, fill = treat)) + 
@@ -365,24 +417,13 @@ ggsave("out/PAM_plot_relative.png", plot = YII_plot,
 # exclude t0
 #rETRmax <- subset(rETR, tp!= "0")
 
-# standardize each fragment to it's mean value at t0
-rETRmax_0 <- subset(rETR, tp== "0")
-rETRmax_0_mean <- rETRmax_0 %>%
-  group_by(ID) %>%
-  get_summary_stats(rETRmax, type = "mean") 
-
-rETRmax_relative <- subset(rETRmax, tp!= "0")
-
-rETRmax_graph <- full_join(rETRmax_relative, rETRmax_0_mean, by="ID")
-
-rETRmax_graph <- rETRmax_graph %>% 
-  mutate(relativerETRmax = 100/mean*rETRmax) 
 
 
-rETRmax_plot <- ggplot(rETRmax, aes(x = tp, y = rETRmax)) +
+
+rETRmax_plot <- ggplot(rETRmax_graph, aes(x = tp, y = relativerETRmax)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
-  geom_smooth(aes(x = tp, y = rETRmax, group = treat, color = treat, fill = treat)) + 
+  geom_smooth(aes(x = tp, y = relativerETRmax, group = treat, color = treat, fill = treat)) + 
   # brings lines under the boxplots to see changes over time
   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
   scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
@@ -467,6 +508,146 @@ heatmap
 ggsave("out/heatmap.png", plot = heatmap,
        scale = 1, width = 8, height = 12, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
+
+
+## ---- 4.6. Advanced heatmap as correlation plots -------------------------
+
+surface_all <-  surface %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # add column with parameter
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(surface_growth)) %>% 
+  mutate(parameter = "surface",
+         conc = as.numeric(conc)) 
+
+volume_all <-  volume %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(volume_growth))%>% 
+  mutate(parameter = "volume",
+         conc = as.numeric(conc)) 
+
+calcification_all <-  calcification %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(weight_growth))%>% 
+  mutate(parameter = "calcification",
+         conc = as.numeric(conc)) 
+
+YII_all <-  YII_relative %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = relativeYII) %>% 
+  # use mean
+  mutate(parameter = "YII")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+FvFm_all <-  FvFm_relative %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = relativeFvFm) %>% 
+  # use mean
+  mutate(parameter = "FvFm")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+rETR_all <-  rETR %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = rETRmax) %>% 
+  # use mean
+  mutate(parameter = "rETRmax")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+
+alpha_all <-  rETR %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = alpha) %>% 
+  # use mean
+  mutate(parameter = "alpha")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+
+Ek_all <-  rETR %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = Ek) %>% 
+  # use mean
+  mutate(parameter = "Ek")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+polypactivity_all <-  Polyps %>%
+  # select only the last timepoint
+  filter(tp!="0") %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = mean(ranks))%>% 
+  mutate(parameter = "polypactivity",
+         conc = as.numeric(conc)) 
+
+# bring all tables together
+all_data <- rbind(surface_all, volume_all, calcification_all, 
+                  YII_all, FvFm_all, 
+                  rETR_all, alpha_all, Ek_all, polypactivity_all)
+
+all_data$parameter <- factor(all_data$parameter, 
+                             levels = c("surface", "volume","calcification","polypactivity",
+                                        "YII", "FvFm", "rETRmax", "Ek",  "alpha"))
+
+
+ggplot(all_data, aes(conc, value)) +
+  facet_grid(parameter~spec, scales="free")+
+  geom_point()+
+  stat_poly_line(color = "black")+
+  scale_x_continuous(trans='log') +
+  scale_y_continuous(trans='log')+
+  stat_correlation(use_label(c("R", "P")))+
+  #xlab (expression(paste("Reactions to ", italic("Artemia"), " cysts")))+
+  #ylab ("Reactions to microplastic")+
+  #labs(col="Species category", size="Polyp diameter")+
+  theme_bw()+
+  theme(legend.position= "none", #c(0.1, 0.9),
+        legend.direction = "horizontal",
+        #panel.grid.major = element_blank(), 
+        #panel.grid.minor = element_blank(),
+        panel.background = element_rect(colour = "black"))
+        #strip.background = element_blank(),
+        #strip.text.x = element_blank(),
+        #strip.text.y = element_text(size=10))
+  
+
 
 
 # ----- 5. Supplements  --------------------------------------------------------
