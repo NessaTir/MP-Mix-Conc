@@ -632,7 +632,7 @@ ggplot(all_data, aes(conc, value)) +
   geom_point()+
   stat_poly_line(color = "black")+
   scale_x_continuous(trans='log') +
-  scale_y_continuous(trans='log')+
+  #scale_y_continuous(trans='log')+
   stat_correlation(use_label(c("R", "P")))+
   #xlab (expression(paste("Reactions to ", italic("Artemia"), " cysts")))+
   #ylab ("Reactions to microplastic")+
@@ -647,7 +647,10 @@ ggplot(all_data, aes(conc, value)) +
         #strip.text.x = element_blank(),
         #strip.text.y = element_text(size=10))
   
-
+# safe graph
+ggsave("out/correlations_log.png", plot = last_plot(),
+       scale = 1, width = 19, height = 24, units = c("cm"),
+       dpi = 600, limitsize = TRUE)  
 
 
 # ----- 5. Supplements  --------------------------------------------------------

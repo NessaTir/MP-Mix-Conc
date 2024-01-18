@@ -30,7 +30,7 @@ library(car)
 # ----- 3. Read in needed data files ------------------------------------------- 
 ## ---- 3.1. Coral identity table ----------------------------------------------
 # read in list with overview of all corals used and their treatments etc.
-corals <- read_csv2("in/coral_treatments.csv") %>%
+corals <- read.csv2("in/coral_treatments.csv", sep=",") %>%
   # modify character of some columns, where necessary
   mutate(treat = as.factor(treat), # column for categorical model
          conc = as.numeric(conc)) # column for continuous model 
@@ -41,14 +41,14 @@ polyp_data_Pve <- read.csv2("in/Polypactivity_Pve.csv") %>%
   # rename column of coral ID to merge with coral info table
   rename(ID = coral) %>%
   # remove unnecessary columns for clear merge
-  select(-col, -tank, -origin) 
+  dplyr::select(-col, -tank, -origin) 
 
 # read in Data table of polyp activity of Stylophora pistillata - wide format
 polyp_data_Spi <- read.csv2("in/Polypactivity_Spi.csv") %>%
   # rename column of coral ID to merge with coral info table
   rename(ID = coral) %>%
   # remove unnecessary columns for clear merge
-  select(-col, -tank, -origin) 
+  dplyr::select(-col, -tank, -origin) 
 
 # bring tables of Pve and Spi together
 polyp_data <- rbind(polyp_data_Pve, polyp_data_Spi)
