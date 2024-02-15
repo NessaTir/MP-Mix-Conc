@@ -14,6 +14,7 @@
 
 # to easily clean data, to read in .rds files 
 library(tidyverse)
+library(dplyr)
 
 # for statistical analyses using LMER and GLMER
 library(lme4)
@@ -24,6 +25,7 @@ library(multcomp)
 # check model fits statistically
 library(performance)
 library(rstatix)
+
 # check model fits visually using qqplot, use glht for lmer testing
 library(car)
 
@@ -32,8 +34,8 @@ library(car)
 # ---- 3. Read in needed data files --------------------------------------------
 ## --- 3.1. Coral identity table -----------------------------------------------
 # read in list with overview of all corals used and their treatments etc.
-corals <- read_csv2("in/coral_treatments.csv") %>%
-  mutate(treat = as.factor(treat), # column for categorical model
+corals <- read_csv("in/coral_treatments.csv") %>%
+  dplyr::mutate(treat = as.factor(treat), # column for categorical model
          conc = as.numeric(conc)) # column for continuous model 
 
 ## --- 3.2. Light adapted PAM data ---------------------------------------------
@@ -45,7 +47,7 @@ t0_light <- read_csv2("in/PAM Data/t0_Light_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", YII_t0 = "Y(II)")  %>% 
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr) 
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr) 
 # remove doubled rows
 t0_light<- t0_light[-c(49, 50, 51),]
 
@@ -54,7 +56,7 @@ t1_light <- read_csv2("in/PAM Data/t1_Light_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", YII_t1 = "Y(II)") %>%
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr)
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr)
 # Rename wrongly named entries
 t1_light[472, 1] <- "Spi_B_8"  
 t1_light[473, 1] <- "Spi_B_8"  
@@ -65,7 +67,7 @@ t2_light <- read_csv2("in/PAM Data/t2_Light_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", YII_t2 = "Y(II)") %>%
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr) 
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F, -nr) 
 # Rename wrongly named entries
 t2_light[136, 1] <- "Pve_D_12" 
 t2_light[137, 1] <- "Pve_D_12" 
@@ -76,7 +78,7 @@ t3_light <- read_csv2("in/PAM Data/t3_Light_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", YII_t3 = "Y(II)") %>%
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
 
 
 ## --- 3.3. Dark adapted PAM data ----------------------------------------------
@@ -88,28 +90,28 @@ t0_dark <- read_csv2("in/PAM Data/t0_dark_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", Fv_Fm_t0 = "Y(II)") %>%
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
 
 # ------------- t1
 t1_dark <- read_csv2("in/PAM Data/t1_dark_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", Fv_Fm_t1 = "Y(II)") %>%
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
 
 # ------------- t2
 t2_dark <- read_csv2("in/PAM Data/t2_dark_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", Fv_Fm_t2 = "Y(II)") %>% 
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F) 
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F) 
 
 # ------------- t3
 t3_dark <- read_csv2("in/PAM Data/t3_dark_all.csv") %>%
   # clean column names for better merge with other timepoints
   rename(ID = "No.", Fv_Fm_t3 = "Y(II)") %>% 
   # remove unnecessary columns
-  select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
+  dplyr::select(-ML, -Temp., -PAR, -ETR, -Fm, -"# t", -Date, -Time, -F)
 
 
 
@@ -229,38 +231,41 @@ Light_mean <- light_all %>%
   group_by(spec, tp, ID, conc, treat, col) %>%
   get_summary_stats(YII, type = "mean")
 
+# calculate relative YII values
+YII_0 <- subset(Light_mean, tp == "0") %>%
+  rename(mean_t0 = mean) %>%
+  # remove doubled coulms for clean merge
+  dplyr::select(-tp)
+
+YII_1_3 <- subset(Light_mean, tp != "0") %>%
+  # remove doubled coulms for clean merge
+  dplyr::select(-spec, -col, -treat, -conc, -variable, -n)
+
+Light_relative <- full_join(YII_0, YII_1_3, by = "ID")
+
+Light_relative <- Light_relative %>% 
+  mutate(relativeYII = 100/mean_t0*mean) 
+
 
 
 ### --- 5.1.1. Pocillopora verrucosa -------------------------------------------
 #### -- 5.1.1.1 Overall effect -------------------------------------------------
 # create a subset with data of Pve, t0 excluded for continuous model
-Pve_overall_effect <- subset(Light_mean, spec == "Pve" & tp!= "0")
+Pve_overall_effect <- subset(Light_relative, spec == "Pve")
 
-# write LMER
-model1_Pve <- lmer(scale(mean^4) ~ conc + (1|col) + (1|tp), data = Pve_overall_effect)
+# LMER didn't show a good fit - write GLMER
+model1_Pve <- glmer((relativeYII) ~ conc + (1|col) + (1|tp), family = poisson, data = Pve_overall_effect)
 
-# inspect residuals
-qqPlot(residuals(model1_Pve))          # okay fit
-shapiro_test(residuals(model1_Pve))    # p > 0.05 = Normality
-# OUTPUT: A tibble: 1 x 3
-# variable              statistic p.value
-# <chr>                     <dbl>   <dbl>
-#   1 residuals(model1_Pve)     0.991  0.0883
-check_normality(model1_Pve)
-# OK: residuals appear as normally distributed (p = 0.089).
-check_heteroscedasticity(model1_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.486).
-
-# get summary of LMER
+# get summary of GLMER
 cftest(model1_Pve)
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
-# Fit: lmer(formula = scale(mean^4) ~ conc + (1 | col) + (1 | tp), data = Pve_overall_effect)
+# Fit: glmer(formula = (relativeYII) ~ conc + (1 | col) + (1 | tp), family = poisson, data = Pve_overall_effect)
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)   
-# (Intercept) == 0  0.081855   0.297566   0.275  0.78325   
-# conc == 0        -0.003684   0.001162  -3.171  0.00152 **
-#   ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Estimate Std. Error z value Pr(>|z|)    
+# (Intercept) == 0 4.6301317  0.7071406   6.548 5.84e-11 ***
+#  conc == 0        0.0001469  0.0001529   0.961    0.337    
+# ---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #   (Univariate p values reported)
 
 
@@ -269,39 +274,27 @@ cftest(model1_Pve)
 # create a subset with data of Pve, to test differences at t1
 Pve_light_t1 <- subset(Light_mean, spec == "Pve" & tp == "1")
 
-# write LMER 
-model_t1_Pve <- lmer(scale(mean) ~ treat + (1|col), data = Pve_light_t1)
+# LMER didn't show a good fit - write GLMER
+model_t1_Pve <- glmer((relativeYII) ~ treat + (1|col), family = poisson, data = Pve_light_t1)
 
-# inspect residuals
-qqPlot(residuals(model_t1_Pve))          # good fit
-shapiro_test(residuals(model_t1_Pve))    # p > 0.05 = Normality
-# OUTPUT: A tibble: 1 x 3
-# variable                statistic p.value
-# <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t1_Pve)     0.989   0.643
-check_normality(model_t1_Pve)
-# OK: residuals appear as normally distributed (p = 0.643).
-check_heteroscedasticity(model_t1_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.972).
-
-# get summary of LMER
+# get summary of GLMER
 summary(glht(model_t1_Pve, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT: Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(mean) ~ treat + (1 | col), data = Pve_light_t1)
+# Fit: glmer(formula = relativeYII ~ treat + (1 | col), family = poisson, data = Pve_light_t1)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)   
-#   0.1 - control == 0  0.45143    0.24399   1.850  0.32143   
-#   1 - control == 0    0.51518    0.24399   2.111  0.20839   
-#   10 - control == 0  -0.10166    0.24399  -0.417  1.00000   
-#   100 - control == 0 -0.40490    0.24399  -1.660  0.38804   
-#   1 - 0.1 == 0        0.06375    0.24399   0.261  1.00000   
-#   10 - 0.1 == 0      -0.55308    0.24399  -2.267  0.16380   
-#   100 - 0.1 == 0     -0.85633    0.24399  -3.510  0.00404 **
-#   10 - 1 == 0        -0.61683    0.24399  -2.528  0.09174 . 
-#   100 - 1 == 0       -0.92008    0.24399  -3.771  0.00163 **
-#   100 - 10 == 0      -0.30325    0.24399  -1.243  0.64174   
+#   0.1 - control == 0 -0.007604   0.033031  -0.230        1
+#   1 - control == 0    0.032411   0.032704   0.991        1
+#   10 - control == 0   0.020609   0.032799   0.628        1
+#   100 - control == 0  0.007310   0.032908   0.222        1
+#   1 - 0.1 == 0        0.040015   0.032767   1.221        1
+#   10 - 0.1 == 0       0.028212   0.032862   0.858        1
+#   100 - 0.1 == 0      0.014914   0.032971   0.452        1
+#   10 - 1 == 0        -0.011803   0.032534  -0.363        1
+#   100 - 1 == 0       -0.025101   0.032643  -0.769        1
+#   100 - 10 == 0      -0.013299   0.032739  -0.406        1 
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #   (Adjusted p values reported -- holm method)
@@ -309,10 +302,10 @@ summary(glht(model_t1_Pve, linfct = mcp(treat = "Tukey")),
 
 # ------------- t2
 # create a subset with data of Pve, to test differences at t2
-Pve_light_t2 <- subset(Light_mean, spec == "Pve" & tp == "2")
+Pve_light_t2 <- subset(Light_relative, spec == "Pve" & tp == "2")
 
 # write LMER
-model_t2_Pve <- lmer(scale(mean) ~ treat + (1|col), data = Pve_light_t2)
+model_t2_Pve <- lmer(scale(log(relativeYII)) ~ treat + (1|col), data = Pve_light_t2)
 
 # inspect residuals
 qqPlot(residuals(model_t2_Pve))          # good fit
@@ -320,11 +313,11 @@ shapiro_test(residuals(model_t2_Pve))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t2_Pve)     0.983   0.300
+#   1 residuals(model_t2_Pve)     0.977   0.107
 check_normality(model_t2_Pve)
-# OK: residuals appear as normally distributed (p = 0.300).
+# OK: residuals appear as normally distributed (p = 0.107).
 check_heteroscedasticity(model_t2_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.944).
+# OK: Error variance appears to be homoscedastic (p = 0.941).
 
 # get summary of LMER
 summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")), 
@@ -334,16 +327,16 @@ summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")),
 # Fit: lmer(formula = scale(mean) ~ treat + (1 | col), data = Pve_light_t2)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)  
-# 0.1 - control == 0  0.29656    0.24614   1.205   1.0000  
-# 1 - control == 0   -0.09554    0.24614  -0.388   1.0000  
-# 10 - control == 0  -0.31846    0.24614  -1.294   1.0000  
-# 100 - control == 0 -0.35030    0.24614  -1.423   1.0000  
-# 1 - 0.1 == 0       -0.39210    0.24614  -1.593   0.8893  
-# 10 - 0.1 == 0      -0.61502    0.24614  -2.499   0.1122  
-# 100 - 0.1 == 0     -0.64687    0.24614  -2.628   0.0859 .
-# 10 - 1 == 0        -0.22292    0.24614  -0.906   1.0000  
-# 100 - 1 == 0       -0.25477    0.24614  -1.035   1.0000  
-# 100 - 10 == 0      -0.03185    0.24614  -0.129   1.0000  
+# 0.1 - control == 0 -0.30011    0.32548  -0.922        1
+# 1 - control == 0    0.02977    0.32548   0.091        1
+# 10 - control == 0   0.17322    0.32548   0.532        1
+# 100 - control == 0  0.20008    0.32548   0.615        1
+# 1 - 0.1 == 0        0.32989    0.32548   1.014        1
+# 10 - 0.1 == 0       0.47334    0.32548   1.454        1
+# 100 - 0.1 == 0      0.50020    0.32548   1.537        1
+# 10 - 1 == 0         0.14345    0.32548   0.441        1
+# 100 - 1 == 0        0.17031    0.32548   0.523        1
+# 100 - 10 == 0       0.02686    0.32548   0.083        1  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
@@ -351,10 +344,10 @@ summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")),
 
 # ------------- t3
 # create a subset with data of Pve, to test differences at t3
-Pve_light_t3 <- subset(Light_mean, spec == "Pve" & tp == "3")
+Pve_light_t3 <- subset(Light_relative, spec == "Pve" & tp == "3")
 
 # write LMER
-model_t3_Pve <- lmer(scale(mean^12) ~ treat + (1|col), data = Pve_light_t3)
+model_t3_Pve <- lmer(scale(log(relativeYII)) ~ treat + (1|col), data = Pve_light_t3)
 
 # inspect residuals
 qqPlot(residuals(model_t3_Pve))          # okay fit
@@ -362,11 +355,11 @@ shapiro_test(residuals(model_t3_Pve))    # p > 0.05 = Normality
 # OUTPUT:  A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t3_Pve)     0.973  0.0601
+#   1 residuals(model_t3_Pve)     0.977  0.105
 check_normality(model_t3_Pve)
-# OK: residuals appear as normally distributed (p = 0.060).
+# OK: residuals appear as normally distributed (p = 0.105).
 check_heteroscedasticity(model_t3_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.628).
+# OK: Error variance appears to be homoscedastic (p = 0.807).
 
 # get summary of LMER
 summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")), 
@@ -376,16 +369,16 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 # Fit: lmer(formula = scale(mean^12) ~ treat + (1 | col), data = Pve_light_t3)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0  0.065529   0.221652   0.296        1
-# 1 - control == 0    0.357732   0.221652   1.614        1
-# 10 - control == 0   0.135670   0.221652   0.612        1
-# 100 - control == 0  0.125707   0.221652   0.567        1
-# 1 - 0.1 == 0        0.292204   0.221652   1.318        1
-# 10 - 0.1 == 0       0.070141   0.221652   0.316        1
-# 100 - 0.1 == 0      0.060179   0.221652   0.272        1
-# 10 - 1 == 0        -0.222063   0.221652  -1.002        1
-# 100 - 1 == 0       -0.232025   0.221652  -1.047        1
-# 100 - 10 == 0      -0.009962   0.221652  -0.045        1
+# 0.1 - control == 0 -0.51753    0.28761  -1.799 0.359762    
+# 1 - control == 0    0.38411    0.28761   1.336 0.726824    
+# 10 - control == 0   0.60006    0.28761   2.086 0.240423    
+# 100 - control == 0  0.60858    0.28761   2.116 0.240423    
+# 1 - 0.1 == 0        0.90164    0.28761   3.135 0.013751 *  
+# 10 - 0.1 == 0       1.11759    0.28761   3.886 0.000918 ***
+# 100 - 0.1 == 0      1.12611    0.28761   3.915 0.000903 ***
+# 10 - 1 == 0         0.21595    0.28761   0.751 1.000000    
+# 100 - 1 == 0        0.22447    0.28761   0.780 1.000000    
+# 100 - 10 == 0       0.00852    0.28761   0.030 1.000000   
 # (Adjusted p values reported -- holm method)
 
 
@@ -393,21 +386,21 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 ### --- 5.1.2. Stylophora pistillata -------------------------------------------
 #### -- 5.1.2.1 Overall effect -------------------------------------------------
 # create a subset with data of Spi, t0 excluded for continuous model
-Spi_overall_effect <- subset(Light_mean, spec == "Spi" & tp!= "0")
+Spi_overall_effect <- subset(Light_relative, spec == "Spi" & tp!= "0")
 
-# LMER didn't show a good fit, therefore GLMER is used
-model1_Spi <- glmer((mean) ~ conc + (1|col) + (1|tp), family = poisson, data = Spi_overall_effect)
+# LMER didn't show a good fit - GLMER is used
+model1_Spi <- glmer(relativeYII ~ conc + (1|col) + (1|tp), family = poisson, data = Spi_overall_effect)
 
 # get summary of GLMER
 cftest(model1_Spi)
 # OUTPUT: 
 # Simultaneous Tests for General Linear Hypotheses
-# Fit: glmer(formula = (mean) ~ conc + (1 | col) + (1 | tp), data = Spi_overall_effect, 
+# Fit: glmer(formula = (relativeYII) ~ conc + (1 | col) + (1 | tp), data = Spi_overall_effect, 
 #            family = poisson)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# (Intercept) == 0 -0.5181142  0.7129059  -0.727    0.467
-# conc == 0        -0.0001463  0.0020294  -0.072    0.943
+# (Intercept) == 0 4.6417451  0.7071402   6.564 5.23e-11 ***
+# conc == 0        0.0001344  0.0001521   0.883    0.377    
 # (Univariate p values reported)
 
 
@@ -415,10 +408,10 @@ cftest(model1_Spi)
 #### -- 5.1.2.2 Specific effects -----------------------------------------------
 # ------------- t1
 # create a subset with data of Spi, to test differences at t1
-Spi_light_t1 <- subset(Light_mean, spec == "Spi" & tp == "1")
+Spi_light_t1 <- subset(Light_relative, spec == "Spi" & tp == "1")
 
 # write LMER
-model_t1_Spi <- lmer(scale(mean^6) ~ treat + (1|col), data = Spi_light_t1)
+model_t1_Spi <- lmer(scale(relativeYII) ~ treat + (1|col), data = Spi_light_t1)
 
 # inspect residuals
 qqPlot(residuals(model_t1_Spi))          # okay fit
@@ -426,30 +419,30 @@ shapiro_test(residuals(model_t1_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t1_Spi)     0.974  0.0671
+#   1 residuals(model_t1_Spi)     0.981  0.219
 check_normality(model_t1_Spi)
-# OK: residuals appear as normally distributed (p = 0.067).
+# OK: residuals appear as normally distributed (p = 0.219).
 check_heteroscedasticity(model_t1_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.278).
+# OK: Error variance appears to be homoscedastic (p = 0.901).
 
 # get summary of LMER
 summary(glht(model_t1_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(mean^6) ~ treat + (1 | col), data = Spi_light_t1)
+# Fit: lmer(formula = scale(relativeYII) ~ treat + (1 | col), data = Spi_light_t1)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)  
-#   0.1 - control == 0 -0.31084    0.27268  -1.140   1.0000  
-#   1 - control == 0   -0.33418    0.27268  -1.226   1.0000  
-#   10 - control == 0  -0.61172    0.27268  -2.243   0.2239  
-#   100 - control == 0 -0.87271    0.27268  -3.201   0.0137 *
-#   1 - 0.1 == 0       -0.02333    0.27268  -0.086   1.0000  
-#   10 - 0.1 == 0      -0.30087    0.27268  -1.103   1.0000  
-#   100 - 0.1 == 0     -0.56187    0.27268  -2.061   0.3148  
-#   10 - 1 == 0        -0.27754    0.27268  -1.018   1.0000  
-#   100 - 1 == 0       -0.53854    0.27268  -1.975   0.3379  
-#   100 - 10 == 0      -0.26100    0.27268  -0.957   1.0000  
+# 0.1 - control == 0 -0.31601    0.31310  -1.009  1.00000   
+# 1 - control == 0   -0.18789    0.31310  -0.600  1.00000   
+# 10 - control == 0   0.72875    0.31310   2.328  0.13956   
+# 100 - control == 0 -0.05311    0.31310  -0.170  1.00000   
+# 1 - 0.1 == 0        0.12812    0.31310   0.409  1.00000   
+# 10 - 0.1 == 0       1.04476    0.31310   3.337  0.00847 **
+# 100 - 0.1 == 0      0.26290    0.31310   0.840  1.00000   
+# 10 - 1 == 0         0.91664    0.31310   2.928  0.03074 * 
+# 100 - 1 == 0        0.13478    0.31310   0.430  1.00000   
+# 100 - 10 == 0      -0.78186    0.31310  -2.497  0.10016  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
@@ -457,10 +450,10 @@ summary(glht(model_t1_Spi, linfct = mcp(treat = "Tukey")),
 
 # ------------- t2
 # create a subset with data of Spi, to test differences at t2
-Spi_light_t2 <- subset(Light_mean, spec == "Spi" & tp == "2")
+Spi_light_t2 <- subset(Light_relative, spec == "Spi" & tp == "2")
 
 # write LMER
-model_t2_Spi <- lmer(scale(mean) ~ treat + (1|col), data = Spi_light_t2)
+model_t2_Spi <- lmer(scale(log(relativeYII)) ~ treat + (1|col), data = Spi_light_t2)
 
 # inspect residuals
 qqPlot(residuals(model_t2_Spi))          # good fit
@@ -468,39 +461,41 @@ shapiro_test(residuals(model_t2_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t2_Spi)     0.979   0.153
+#   1 residuals(model_t2_Spi)     0.974   0.0635
 check_normality(model_t2_Spi)
-# OK: residuals appear as normally distributed (p = 0.153).
+# OK: residuals appear as normally distributed (p = 0.063).
 check_heteroscedasticity(model_t2_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.888).
+# OK: Error variance appears to be homoscedastic (p = 0.666).
 
 # get summary of LMER
 summary(glht(model_t2_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(mean) ~ treat + (1 | col), data = Spi_light_t2)
+# Fit: lmer(formula = scale(relativeYII) ~ treat + (1 | col), data = Spi_light_t2)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0 -0.35316    0.23040  -1.533    0.877
-# 1 - control == 0   -0.57510    0.23040  -2.496    0.126
-# 10 - control == 0  -0.44966    0.23040  -1.952    0.459
-# 100 - control == 0 -0.42650    0.23040  -1.851    0.513
-# 1 - 0.1 == 0       -0.22193    0.23040  -0.963    1.000
-# 10 - 0.1 == 0      -0.09649    0.23040  -0.419    1.000
-# 100 - 0.1 == 0     -0.07333    0.23040  -0.318    1.000
-# 10 - 1 == 0         0.12544    0.23040   0.544    1.000
-# 100 - 1 == 0        0.14860    0.23040   0.645    1.000
-# 100 - 10 == 0       0.02316    0.23040   0.101    1.000
+# 0.1 - control == 0  -0.2426     0.2935  -0.827 0.867283    
+# 1 - control == 0    -0.3759     0.2935  -1.281 0.801279    
+# 10 - control == 0    0.8272     0.2935   2.818 0.038610 *  
+# 100 - control == 0   0.3111     0.2935   1.060 0.867283    
+# 1 - 0.1 == 0        -0.1333     0.2935  -0.454 0.867283    
+# 10 - 0.1 == 0        1.0698     0.2935   3.645 0.002407 ** 
+# 100 - 0.1 == 0       0.5537     0.2935   1.887 0.355223    
+# 10 - 1 == 0          1.2031     0.2935   4.099 0.000415 ***
+# 100 - 1 == 0         0.6870     0.2935   2.341 0.134715    
+# 100 - 10 == 0       -0.5161     0.2935  -1.758 0.393482    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
 
 
 # ------------- t3
 # create a subset with data of Spi, to test differences at t3
-Spi_light_t3 <- subset(Light_mean, spec == "Spi" & tp == "3")
+Spi_light_t3 <- subset(Light_relative, spec == "Spi" & tp == "3")
 
 # write LMER
-model_t3_Spi <- lmer(scale(mean^3) ~ treat + (1|col), data = Spi_light_t3)
+model_t3_Spi <- lmer(scale(relativeYII) ~ treat + (1|col), data = Spi_light_t3)
 
 # inspect residuals
 qqPlot(residuals(model_t3_Spi))          # okay fit
@@ -508,42 +503,64 @@ shapiro_test(residuals(model_t3_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t3_Spi)     0.974  0.0685
+#   1 residuals(model_t3_Spi)     0.975  0.0747
 check_normality(model_t3_Spi)
-# OK: residuals appear as normally distributed (p = 0.069).
+# OK: residuals appear as normally distributed (p = 0.075).
 check_heteroscedasticity(model_t3_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.946).
+# OK: Error variance appears to be homoscedastic (p = 0.479).
 
 # get summary of LMER
 summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(mean^3) ~ treat + (1 | col), data = Spi_light_t3)
+# Fit: lmer(formula = scale(relativeYII) ~ treat + (1 | col), data = Spi_light_t3)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0 -0.15640    0.20201  -0.774    1.000
-# 1 - control == 0   -0.29544    0.20201  -1.463    1.000
-# 10 - control == 0  -0.49370    0.20201  -2.444    0.145
-# 100 - control == 0 -0.35866    0.20201  -1.776    0.682
-# 1 - 0.1 == 0       -0.13904    0.20201  -0.688    1.000
-# 10 - 0.1 == 0      -0.33730    0.20201  -1.670    0.760
-# 100 - 0.1 == 0     -0.20226    0.20201  -1.001    1.000
-# 10 - 1 == 0        -0.19826    0.20201  -0.981    1.000
-# 100 - 1 == 0       -0.06322    0.20201  -0.313    1.000
-# 100 - 10 == 0       0.13504    0.20201   0.668    1.000
+# 0.1 - control == 0 -0.09878    0.28816  -0.343   1.0000  
+# 1 - control == 0   -0.15296    0.28816  -0.531   1.0000  
+# 10 - control == 0   0.74990    0.28816   2.602   0.0741 .
+# 100 - control == 0  0.30876    0.28816   1.071   1.0000  
+# 1 - 0.1 == 0       -0.05419    0.28816  -0.188   1.0000  
+# 10 - 0.1 == 0       0.84867    0.28816   2.945   0.0291 *
+# 100 - 0.1 == 0      0.40753    0.28816   1.414   0.7865  
+# 10 - 1 == 0         0.90286    0.28816   3.133   0.0173 *
+# 100 - 1 == 0        0.46172    0.28816   1.602   0.7637  
+# 100 - 10 == 0      -0.44114    0.28816  -1.531   0.7637  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
 
 
 
 ## ---- 5.2. Fv/Fm -------------------------------------------------------------
+# create table with means of PAM measurements for model creation
+Dark_mean <- dark_all %>%
+  group_by(spec, tp, ID, conc, treat, col) %>%
+  get_summary_stats(Fv_Fm, type = "mean")
+
+# calculate relative YII values
+Fv_Fm_0 <- subset(Dark_mean, tp == "0") %>%
+  rename(mean_t0 = mean) %>%
+  # remove doubled coulms for clean merge
+  dplyr::select(-tp)
+
+Fv_Fm_1_3 <- subset(Dark_mean, tp != "0") %>%
+  # remove doubled coulms for clean merge
+  dplyr::select(-spec, -col, -treat, -conc, -variable, -n)
+
+Dark_relative <- full_join(Fv_Fm_0, Fv_Fm_1_3, by = "ID")
+
+Dark_relative <- Dark_relative %>% 
+  mutate(relativeFv_Fm = 100/mean_t0*mean) 
+
+
 ### --- 5.2.1. Pocillopora verrucosa -------------------------------------------
 #### -- 5.2.1.1 Overall effect -------------------------------------------------
-# create a subset with data of Pve, t0 excluded for continuous model
-Pve_overall_effect <- subset(dark_all, spec == "Pve" & tp!= "0")
+Pve_overall_effect <- subset(Dark_relative, spec == "Pve" & tp!= "0")
 
 # write LMER
-model1_Pve <- lmer(scale(Fv_Fm) ~ conc + (1|col) + (1|tp), data = Pve_overall_effect)
+model1_Pve <- lmer(log(relativeFv_Fm) ~ conc + (1|col) + (1|tp), data = Pve_overall_effect)
 
 # inspect residuals
 qqPlot(residuals(model1_Pve))          # good fit
@@ -551,32 +568,35 @@ shapiro_test(residuals(model1_Pve))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable              statistic p.value
 # <chr>                     <dbl>   <dbl>
-#   1 residuals(model1_Pve)     0.990  0.0748
+#   1 residuals(model1_Pve)     0.993  0.196
 check_normality(model1_Pve)
-# OK: residuals appear as normally distributed (p = 0.077).
+# OK: residuals appear as normally distributed (p = 0.202).
 check_heteroscedasticity(model1_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.799).
+# OK: Error variance appears to be homoscedastic (p = 0.668).
 
 # get summary of LMER
 cftest(model1_Pve)
 # OUTPUT: 
-# Simultaneous Tests for General Linear Hypotheses
-# Fit: lmer(formula = scale(Fv_Fm) ~ conc + (1 | col) + (1 | tp), data = Pve_overall_effect)
+#  Simultaneous Tests for General Linear Hypotheses
+# Fit: lmer(formula = log(relativeFv_Fm) ~ conc + (1 | col) + (1 | tp), 
+#           data = Pve_overall_effect)
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)
-# (Intercept) == 0 -0.041710   0.243778  -0.171    0.864
-# conc == 0         0.001877   0.001338   1.403    0.161
-# (Univariate p values reported)
+#  Estimate Std. Error z value Pr(>|z|)    
+# (Intercept) == 0 4.5918317  0.0480226  95.618   <2e-16 ***
+#   conc == 0        0.0013425  0.0006784   1.979   0.0478 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#  (Univariate p values reported)
 
 
 
 #### -- 5.2.1.2 Specific effects -----------------------------------------------
 # ------------- t1
 # create a subset with data of Pve, to test differences at t1
-Pve_dark_t1 <- subset(dark_all, spec == "Pve" & tp == "1")
+Pve_dark_t1 <- subset(Dark_relative, spec == "Pve" & tp == "1")
 
 # write LMER
-model_t1_Pve <- lmer(log(Fv_Fm) ~ treat + (1|col), data = Pve_dark_t1)
+model_t1_Pve <- lmer(log(relativeFv_Fm) ~ treat + (1|col), data = Pve_dark_t1)
 
 # inspect residuals
 qqPlot(residuals(model_t1_Pve))          # good fit
@@ -584,11 +604,11 @@ shapiro_test(residuals(model_t1_Pve))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t1_Pve)     0.990   0.749
+#   1 residuals(model_t1_Pve)     0.982   0.267
 check_normality(model_t1_Pve)
-# OK: residuals appear as normally distributed (p = 0.749).
+# OK: residuals appear as normally distributed (p = 0.267).
 check_heteroscedasticity(model_t1_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.756).
+# OK: Error variance appears to be homoscedastic (p = 0.940).
 
 # get summary of LMER
 summary(glht(model_t1_Pve, linfct = mcp(treat = "Tukey")), 
@@ -596,42 +616,30 @@ summary(glht(model_t1_Pve, linfct = mcp(treat = "Tukey")),
 # OUTPUT:
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = log(Fv_Fm) ~ treat + (1 | col), data = Pve_dark_t1)
+# Fit: lmer(formula = log(relativeFv_Fm) ~ treat + (1 | col), data = Pve_dark_t1)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0 -0.055616   0.094472  -0.589        1
-# 1 - control == 0   -0.051225   0.094472  -0.542        1
-# 10 - control == 0  -0.079695   0.094472  -0.844        1
-# 100 - control == 0 -0.123419   0.094472  -1.306        1
-# 1 - 0.1 == 0        0.004391   0.094472   0.046        1
-# 10 - 0.1 == 0      -0.024079   0.094472  -0.255        1
-# 100 - 0.1 == 0     -0.067803   0.094472  -0.718        1
-# 10 - 1 == 0        -0.028470   0.094472  -0.301        1
-# 100 - 1 == 0       -0.072194   0.094472  -0.764        1
-# 100 - 10 == 0      -0.043724   0.094472  -0.463        1
+# 0.1 - control == 0 -0.202415   0.148279  -1.365    1.000
+# 1 - control == 0   -0.242063   0.148279  -1.632    0.923
+# 10 - control == 0  -0.307794   0.148279  -2.076    0.379
+# 100 - control == 0 -0.198319   0.148279  -1.337    1.000
+# 1 - 0.1 == 0       -0.039648   0.148279  -0.267    1.000
+# 10 - 0.1 == 0      -0.105379   0.148279  -0.711    1.000
+# 100 - 0.1 == 0      0.004095   0.148279   0.028    1.000
+# 10 - 1 == 0        -0.065731   0.148279  -0.443    1.000
+# 100 - 1 == 0        0.043743   0.148279   0.295    1.000
+# 100 - 10 == 0       0.109475   0.148279   0.738    1.000
 # (Adjusted p values reported -- holm method)
 
 
 # ------------- t2
 # create a subset with data of Pve, to test differences at t2
-Pve_dark_t2 <- subset(dark_all, spec == "Pve" & tp == "2")
+Pve_dark_t2 <- subset(Dark_relative, spec == "Pve" & tp == "2")
 
-# write LMER
-model_t2_Pve <- lmer(scale(Fv_Fm) ~ treat + (1|col), data = Pve_dark_t2)
+# LMER didn't show good fit - GLMER was used
+model_t2_Pve <- glmer((relativeFv_Fm) ~ treat + (1|col), family = poisson, data = Pve_dark_t2)
 
-# inspect residuals
-qqPlot(residuals(model_t2_Pve))          # good fit
-shapiro_test(residuals(model_t2_Pve))    # p > 0.05 = Normality
-# OUTPUT:  A tibble: 1 x 3
-# variable                statistic p.value
-# <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t2_Pve)     0.979   0.142
-check_normality(model_t2_Pve)
-# OK: residuals appear as normally distributed (p = 0.142).
-check_heteroscedasticity(model_t2_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.818).
-
-# get summary of LMER
+# get summary of GLMER
 summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:
@@ -655,10 +663,10 @@ summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")),
 
 # ------------- t3
 # create a subset with data of Pve, to test differences at t3
-Pve_dark_t3 <- subset(dark_all, spec == "Pve" & tp == "3")
+Pve_dark_t3 <- subset(Dark_relative, spec == "Pve" & tp == "3")
 
 # write LMER
-model_t3_Pve <- lmer(scale(Fv_Fm) ~ treat + (1|col), data = Pve_dark_t3)
+model_t3_Pve <- lmer(log(relativeFv_Fm) ~ treat + (1|col), data = Pve_dark_t3)
 
 # inspect residuals
 qqPlot(residuals(model_t3_Pve))          # good fit
@@ -666,11 +674,11 @@ shapiro_test(residuals(model_t3_Pve))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t3_Pve)     0.985   0.394
+#   1 residuals(model_t3_Pve)     0.975   0.0817
 check_normality(model_t3_Pve)
-# OK: residuals appear as normally distributed (p = 0.394).
+# OK: residuals appear as normally distributed (p = 0.).
 check_heteroscedasticity(model_t3_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.749).
+# OK: Error variance appears to be homoscedastic (p = 0.781).
 
 # get summary of LMER
 summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")), 
@@ -678,21 +686,19 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 # OUTPUT: 
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(Fv_Fm) ~ treat + (1 | col), data = Pve_dark_t3)
+# Fit: lmer(formula = log(relativeFv_Fm) ~ treat + (1 | col), data = Pve_dark_t3)
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)  
-# 0.1 - control == 0   0.3585     0.2866   1.251   1.0000  
-# 1 - control == 0     0.1613     0.2866   0.563   1.0000  
-# 10 - control == 0    0.4647     0.2866   1.621   0.7346  
-# 100 - control == 0   0.8628     0.2866   3.010   0.0261 *
-#   1 - 0.1 == 0        -0.1973     0.2866  -0.688   1.0000  
-# 10 - 0.1 == 0        0.1062     0.2866   0.370   1.0000  
-# 100 - 0.1 == 0       0.5043     0.2866   1.759   0.6282  
-# 10 - 1 == 0          0.3034     0.2866   1.059   1.0000  
-# 100 - 1 == 0         0.7015     0.2866   2.448   0.1294  
-# 100 - 10 == 0        0.3981     0.2866   1.389   0.9891  
-# ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#   Estimate Std. Error z value Pr(>|z|)
+# 0.1 - control == 0  0.008981   0.145580   0.062    1.000
+# 1 - control == 0   -0.088674   0.145580  -0.609    1.000
+# 10 - control == 0  -0.027093   0.145580  -0.186    1.000
+# 100 - control == 0  0.272418   0.145580   1.871    0.490
+# 1 - 0.1 == 0       -0.097656   0.145580  -0.671    1.000
+# 10 - 0.1 == 0      -0.036075   0.145580  -0.248    1.000
+# 100 - 0.1 == 0      0.263437   0.145580   1.810    0.493
+# 10 - 1 == 0         0.061581   0.145580   0.423    1.000
+# 100 - 1 == 0        0.361093   0.145580   2.480    0.131
+# 100 - 10 == 0       0.299511   0.145580   2.057    0.357
 # (Adjusted p values reported -- holm method)
 
 
@@ -700,41 +706,32 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 ### --- 5.2.2. Stylophora pistillata -------------------------------------------
 #### -- 5.2.2.1 Overall effect -------------------------------------------------
 # create a subset with data of Spi, t0 excluded for continuous model
-Spi_overall_effect <- subset(dark_all, spec == "Spi" & tp!= "0")
+Spi_overall_effect <- subset(Dark_relative, spec == "Spi" & tp!= "0")
 
-# write LMER
-model1_Spi <- lmer(scale(Fv_Fm) ~ conc + (1|col) + (1|tp), data = Spi_overall_effect)
+# LMER didn't show good fit - GLMER was used
+model1_Spi <- glmer((relativeFv_Fm) ~ conc + (1|col) + (1|tp), family = "poisson", data = Spi_overall_effect)
 
-# inspect residuals
-qqPlot(residuals(model1_Spi))          # good fit
-shapiro_test(residuals(model1_Spi))    # p > 0.05 Normality of residuals
-# OUTPUT:  A tibble: 1 x 3
-# variable              statistic p.value
-# <chr>                     <dbl>   <dbl>
-#   1 residuals(model1_Spi)     0.993   0.244
-check_normality(model1_Spi)
-# OK: residuals appear as normally distributed (p = 0.249).
-check_heteroscedasticity(model1_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.889).
-
-# get summary of LMER
+# get summary of GLMER
 cftest(model1_Spi)
 # OUTPUT: Simultaneous Tests for General Linear Hypotheses
-# Fit: lmer(formula = scale(Fv_Fm) ~ conc + (1 | col) + (1 | tp), data = Spi_overall_effect)
+# Fit: glmer(formula = (relativeFv_Fm) ~ conc + (1 | col) + (1 | tp), 
+# data = Spi_overall_effect, family = "poisson")
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)
-# (Intercept) == 0  0.024652   0.100095   0.246    0.805
-# conc == 0        -0.001109   0.001538  -0.721    0.471
+#   Estimate Std. Error z value Pr(>|z|)    
+# (Intercept) == 0  4.8023397  0.7071354   6.791 1.11e-11 ***
+#   conc == 0        -0.0012998  0.0001484  -8.759  < 2e-16 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Univariate p values reported)
 
 
 #### -- 5.2.2.2 Specific effects -----------------------------------------------
 # ------------- t1
 # create a subset with data of Spi, to test differences at t1
-Spi_dark_t1 <- subset(dark_all, spec == "Spi" & tp == "1")
+Spi_dark_t1 <- subset(Dark_relative, spec == "Spi" & tp == "1")
 
 # write LMER
-model_t1_Spi <- lmer(scale(Fv_Fm) ~ treat + (1|col), data = Spi_dark_t1)
+model_t1_Spi <- lmer(log(relativeFv_Fm) ~ treat + (1|col), data = Spi_dark_t1)
 
 # inspect residuals
 qqPlot(residuals(model_t1_Spi))          # good fit
@@ -742,79 +739,69 @@ shapiro_test(residuals(model_t1_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t1_Spi)     0.990   0.728
+#   1 residuals(model_t1_Spi)     0.974   0.0688
 check_normality(model_t1_Spi)
-# OK: residuals appear as normally distributed (p = 0.728).
+# OK: residuals appear as normally distributed (p = 0.069).
 check_heteroscedasticity(model_t1_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.641).
+# OK: Error variance appears to be homoscedastic (p = 0.822).
 
 # get summary of LMER
 summary(glht(model_t1_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(Fv_Fm) ~ treat + (1 | col), data = Spi_dark_t1)
+# Fit: lmer(formula = scale(relativeFv_Fm) ~ treat + (1 | col), data = Spi_dark_t1)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0  0.29129    0.32933   0.884        1
-# 1 - control == 0   -0.01998    0.32933  -0.061        1
-# 10 - control == 0   0.18077    0.32933   0.549        1
-# 100 - control == 0  0.01155    0.32933   0.035        1
-# 1 - 0.1 == 0       -0.31128    0.32933  -0.945        1
-# 10 - 0.1 == 0      -0.11052    0.32933  -0.336        1
-# 100 - 0.1 == 0     -0.27974    0.32933  -0.849        1
-# 10 - 1 == 0         0.20075    0.32933   0.610        1
-# 100 - 1 == 0        0.03153    0.32933   0.096        1
-# 100 - 10 == 0      -0.16922    0.32933  -0.514        1
+# 0.1 - control == 0  0.01512    0.14216   0.106        1
+# 1 - control == 0   -0.05006    0.14216  -0.352        1
+# 10 - control == 0  -0.02789    0.14216  -0.196        1
+# 100 - control == 0 -0.13677    0.14216  -0.962        1
+# 1 - 0.1 == 0       -0.06519    0.14216  -0.459        1
+# 10 - 0.1 == 0      -0.04301    0.14216  -0.303        1
+# 100 - 0.1 == 0     -0.15190    0.14216  -1.068        1
+# 10 - 1 == 0         0.02217    0.14216   0.156        1
+# 100 - 1 == 0       -0.08671    0.14216  -0.610        1
+# 100 - 10 == 0      -0.10888    0.14216  -0.766        1
 # (Adjusted p values reported -- holm method)
 
 
 # ------------- t2
 # create a subset with data of Spi, to test differences at t2
-Spi_dark_t2 <- subset(dark_all, spec == "Spi" & tp == "2")
+Spi_dark_t2 <- subset(Dark_relative, spec == "Spi" & tp == "2")
 
-# write LMER
-model_t2_Spi <- lmer(scale(Fv_Fm) ~ treat + (1|col), data = Spi_dark_t2)
+# LMER didn't show good fit - GLMER was used
+model_t2_Spi <- glmer((relativeFv_Fm) ~ treat + (1|col), family = "poisson", data = Spi_dark_t2)
 
-# inspect residuals
-qqPlot(residuals(model_t2_Spi))          # good fit
-shapiro_test(residuals(model_t2_Spi))    # p > 0.05 = Normality
-# OUTPUT: A tibble: 1 x 3
-# variable                statistic p.value
-# <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t2_Spi)     0.988   0.552
-check_normality(model_t2_Spi)
-# OK: residuals appear as normally distributed (p = 0.552).
-check_heteroscedasticity(model_t2_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.747).
-
-# get summary of LMER
+# get summary of GLMER
 summary(glht(model_t2_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT: Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(Fv_Fm) ~ treat + (1 | col), data = Spi_dark_t2)
+# Fit: glmer(formula = (relativeFv_Fm) ~ treat + (1 | col), data = Spi_dark_t2, 
+#       family = "poisson")
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0 -0.316147   0.329381  -0.960        1
-# 1 - control == 0    0.007781   0.329381   0.024        1
-# 10 - control == 0   0.055045   0.329381   0.167        1
-# 100 - control == 0 -0.006052   0.329381  -0.018        1
-# 1 - 0.1 == 0        0.323928   0.329381   0.983        1
-# 10 - 0.1 == 0       0.371192   0.329381   1.127        1
-# 100 - 0.1 == 0      0.310095   0.329381   0.941        1
-# 10 - 1 == 0         0.047264   0.329381   0.143        1
-# 100 - 1 == 0       -0.013833   0.329381  -0.042        1
-# 100 - 10 == 0      -0.061097   0.329381  -0.185        1
+# Estimate Std. Error z value Pr(>|z|)    
+# 0.1 - control == 0 -0.14483    0.03064  -4.727 2.03e-05 ***
+# 1 - control == 0   -0.10199    0.03029  -3.367  0.00456 ** 
+# 10 - control == 0  -0.03756    0.02979  -1.261  0.51704    
+# 100 - control == 0 -0.18529    0.03097  -5.982 2.20e-08 ***
+# 1 - 0.1 == 0        0.04284    0.03139   1.365  0.51704    
+# 10 - 0.1 == 0       0.10727    0.03091   3.471  0.00363 ** 
+# 100 - 0.1 == 0     -0.04046    0.03205  -1.262  0.51704    
+# 10 - 1 == 0         0.06443    0.03056   2.108  0.14009    
+# 100 - 1 == 0       -0.08330    0.03172  -2.626  0.04319 *  
+# 100 - 10 == 0      -0.14773    0.03124  -4.729 2.03e-05 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
 
 
 # ------------- t3
-# create a subset with data of Spi, to test differences at t3
-Spi_dark_t3 <- subset(dark_all, spec == "Spi" & tp == "3")
+Spi_dark_t3 <- subset(Dark_relative, spec == "Spi" & tp == "3")
 
 # write LMER
-model_t3_Spi <- lmer(scale(Fv_Fm) ~ treat + (1|col), data = Spi_dark_t3)
+model_t3_Spi <- lmer(log(relativeFv_Fm) ~ treat + (1|col), data = Spi_dark_t3)
 
 # inspect residuals
 qqPlot(residuals(model_t3_Spi))          # good fit
@@ -822,30 +809,30 @@ shapiro_test(residuals(model_t3_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t3_Spi)     0.976  0.0975
+#   1 residuals(model_t3_Spi)     0.9992  0.848
 check_normality(model_t3_Spi)
-# OK: residuals appear as normally distributed (p = 0.097).
+# OK: residuals appear as normally distributed (p = 0.848).
 check_heteroscedasticity(model_t3_Spi)
-# OK: Error variance appears to be homoscedastic (p = 0.951).
+# OK: Error variance appears to be homoscedastic (p = 0.960).
 
 # get summary of LMER
 summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT: Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(Fv_Fm) ~ treat + (1 | col), data = Spi_dark_t3)
+# Fit: lmer(formula = log(relativeFv_Fm) ~ treat + (1 | col), data = Spi_dark_t3)
 # Linear Hypotheses:
 #   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0  0.38431    0.33310   1.154        1
-# 1 - control == 0    0.01615    0.33310   0.048        1
-# 10 - control == 0   0.42445    0.33310   1.274        1
-# 100 - control == 0 -0.09121    0.33310  -0.274        1
-# 1 - 0.1 == 0       -0.36816    0.33310  -1.105        1
-# 10 - 0.1 == 0       0.04014    0.33310   0.121        1
-# 100 - 0.1 == 0     -0.47552    0.33310  -1.428        1
-# 10 - 1 == 0         0.40830    0.33310   1.226        1
-# 100 - 1 == 0       -0.10736    0.33310  -0.322        1
-# 100 - 10 == 0      -0.51566    0.33310  -1.548        1
+# 0.1 - control == 0  0.07836    0.14464   0.542    1.000
+# 1 - control == 0   -0.01482    0.14464  -0.102    1.000
+# 10 - control == 0   0.09984    0.14464   0.690    1.000
+# 100 - control == 0 -0.16326    0.14464  -1.129    1.000
+# 1 - 0.1 == 0       -0.09319    0.14464  -0.644    1.000
+# 10 - 0.1 == 0       0.02148    0.14464   0.148    1.000
+# 100 - 0.1 == 0     -0.24162    0.14464  -1.671    0.853
+# 10 - 1 == 0         0.11466    0.14464   0.793    1.000
+# 100 - 1 == 0       -0.14844    0.14464  -1.026    1.000
+# 100 - 10 == 0      -0.26310    0.14464  -1.819    0.689
 # (Adjusted p values reported -- holm method)
 
 
