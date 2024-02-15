@@ -17,8 +17,15 @@
 
 # ----- 2. Load in needed packages ---------------------------------------------
 library(tidyverse)
+
+# read in the data files
 library(readxl)
+
+# create graphs
 library(ggplot2)
+
+# work with summarized data, e.g., means
+library(rstatix)
 
 # bring different plots together
 library("patchwork")
@@ -28,7 +35,14 @@ library("ggtext")
 
 
 # ----- 3. Read in needed data files ------------------------------------------- 
-## ---- 3.1. Processed growth tables -------------------------------------------
+## ---- 3.2. Coral Information -------------------------------------------------
+corals <- read.csv2("in/coral_treatments.csv", sep=",") %>%
+  # modify character of some columns, where necessary
+  mutate(treat = as.factor(treat), # column for categorical model
+         conc = as.numeric(conc)) %>% # column for continuous model 
+  dplyr::select(ID, treat, conc)
+
+## ---- 3.3. Processed growth tables -------------------------------------------
 # Surface
 surface <- read_rds("processed/surface_growth.rds")
 
@@ -39,47 +53,44 @@ volume <- read_rds("processed/volume_growth.rds")
 calcification <- read_rds("processed/weight_growth.rds") 
 
 # Necrosis
-necrosis <- read_rds("processed/necrosis_percent.rds")
-
-# Add ranks after Marshall and Schuttenberg 2006:
-# low:      1-10%
-# moderate: 0-50%
-# high:     > 50%
-necrosis_rank <- necrosis %>% 
-  mutate(ranks = case_when(necrosis >= 50 ~ "high",
-                           necrosis >= 10 ~ "moderate",
-                           necrosis >= 1 ~ "low",
-                           TRUE ~ "none"),
-         tp = as.numeric(tp))
-
-# relevel ranks
-necrosis_rank$ranks <- factor(necrosis_rank$ranks, 
-                              levels = c( "none", "low", "moderate", "high"))
-
-# create a table to create a barplot of necrosis with
-Necrosis_Bar <- necrosis_rank %>%
-  freq_table(spec, treat, conc, tp, ranks, na.rm = T) # Abgabe als letztes --> daraus errechnen sich die 100%
+necrosis <- read_csv2("out/Summary_necrosis.csv") %>%
+  dplyr::select(-c(1))
 
 
-## ---- 3.3. Photosynthetic efficiency -----------------------------------------
+## ---- 3.4. Photosynthetic efficiency -----------------------------------------
 # effective quantum yield
-YII <- read_rds("processed/light_PAM.rds")
+YII <- read_rds("processed/light_all.rds")
+
+# maximum quantum yield
+FvFm <- read_rds("processed/dark_all.rds")
 
 # relative electron transport rate
-rETR <- read_rds("processed/RLC_parameter.rds")
+rETR <- read_rds("processed/rETR_parameter.rds") %>%
+  # clean column names for better merge with other timepoints
+  separate(ID_time, c('spec', 'col', 'tank', 'tp')) %>%    
+  unite(ID, c(spec, col, tank), sep="_", remove=FALSE)%>% 
+  # reaname timepoints for clean statistical analyses
+  mutate(tp = case_when(tp == "t0"~ "0",
+                        tp == "t1"~ "1",
+                        tp == "t2"~ "2",
+                        tp == "t3"~ "3"),
+         tp = as.numeric(tp))
+
+# merge rETR Table with coral infos
+rETR_i <-  merge(corals, rETR, by = 'ID', all.x = TRUE)
 
 
-## ---- 3.4. Polyp activity ----------------------------------------------------
+## ---- 3.5. Polyp activity ----------------------------------------------------
 Polyps <- read_rds("processed/polyp_activity.rds")
 
 
-## ---- 3.5. z-Values ----------------------------------------------------------
+## ---- 3.6. z-Values ----------------------------------------------------------
 z_values <- read_csv2("in/z-values_random_t.csv") %>%
   mutate(z_value = as.numeric(z_value),
          Parameter = as.factor(Parameter),
          stars = as.factor(stars))
 
-## ---- 3.6. Supplements -------------------------------------------------------
+## ---- 3.7. Supplements -------------------------------------------------------
 # MP Concentration measurements
 Concentrations <- read_csv2("in/Concentration_newformat.csv") %>%
   mutate(per_L = ((count/volume)*1000),
@@ -104,11 +115,11 @@ names(treat_labs) <- c("control", "0.1", "1", "10", "100")
 # Create a color scheme
 color_scheme <- c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E")
 
-alphavalues <- c(0.025, 0.3, 0.6, 1)
+alphavalues <- c(0.005, 0.3, 0.6, 1)
 
 
 ## ---- 4.2. Growth parameters -------------------------------------------------
-# ------------- surface
+### --- 4.2.1. Surface ---------------------------------------------------------
 surface_plot <- surface %>%
   # separate by species, concentration and timepoint
   group_by(spec, conc, time) %>%
@@ -152,7 +163,7 @@ surface_plot <- surface %>%
 surface_plot
 
 
-# ------------- Volume
+### --- 4.2.2. Volume ----------------------------------------------------------
 volume_plot <- volume %>%
   # separate by species, concentration and timepoint
   group_by(spec, conc, time) %>%
@@ -192,7 +203,7 @@ volume_plot <- volume %>%
 volume_plot
 
 
-# ------------- Calcification
+### --- 4.2.3. Calcification ---------------------------------------------------
 weight_plot <- calcification %>%
   # separate by species, concentration and timepoint
   group_by(spec, conc, time) %>%
@@ -224,7 +235,7 @@ weight_plot <- calcification %>%
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
         strip.text.x = element_blank(), # remove species labels
-        axis.text.x = element_blank(),
+        axis.text.x = element_text(size = 10),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
@@ -235,15 +246,29 @@ weight_plot
 
 
 
-# ------------- Necrosis
-necro_plot <- Necrosis_Bar %>% 
+### --- 4.2.4. Necrosis --------------------------------------------------------
+# level treatment, important for visualisation 
+necrosis$treat <- factor(necrosis$treat,
+                       levels = c("control", "0.1", "1", "10", "100"))
+necrosis$cat <- factor(necrosis$cat,
+                       levels = c("none", "low", "moderate", "high"))
+# create legend names for category names
+cat_labs <-  c("", "low", "moderate", "high")
+names(cat_labs) <- c("none", "low", "moderate", "high")
+
+# Create a color scheme with switched order, so it's correct in the graph
+color_scheme_2 <- c("#540B0E", "#9E2A2B", "#E09F3E", "#FFED85", "#4A8696")
+
+necro_plot <- necrosis %>% 
   filter(tp =="3") %>% 
-  ggplot(aes(x=conc, y=prop, fill= fct_rev(conc)))+
-  geom_bar(stat = "identity", aes(alpha=ranks)) +
+  ggplot(aes(x=treat, y=prop, fill= fct_rev(treat)))+
+  geom_bar(stat = "identity", aes(alpha=cat)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
-  scale_alpha_manual("ranks", values=alphavalues) +
-  scale_fill_manual(guide = 'none', values = color_scheme)+
+  scale_alpha_manual("cat", values=alphavalues,
+                     labels = cat_labs) +
+  scale_fill_manual(guide = 'none', values = color_scheme_2)+
+  scale_x_discrete(labels = treat_labs) +
   labs(x = "Treatment (mg/l)",
        y = "Necrosis (%)",
        title = "") +
@@ -251,7 +276,7 @@ necro_plot <- Necrosis_Bar %>%
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
-        strip.text.x = element_blank(),
+        strip.text.x = element_text(face = "italic", size = 12),
         axis.text.x = element_text(size = 10),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
@@ -262,6 +287,7 @@ necro_plot <- Necrosis_Bar %>%
 
 # show plot
 necro_plot
+
 
 
 # bring all growth plots together
@@ -279,12 +305,12 @@ polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
-   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
+   scale_x_continuous(labels= c("0", "4", "8", "12")) +
    scale_color_manual(values = color_scheme,
                       labels = treat_labs) +
    scale_fill_manual(values = color_scheme,
                      labels = treat_labs) +
-  ylab("Ranks of activity") + 
+  ylab("Mean polyp activity") + 
   xlab("Weeks of exposure") +
   labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
   # design theme
@@ -311,19 +337,30 @@ ggsave("out/polyps.png", plot = polyps,
 
 
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
-# ------------- Effective quantum yield
-# exclude t0
-YII_graph <- subset(YII, tp!= "0")
+# ----- 4.4.1. Effective quantum yield -----------------------------------------
+# standardize each fragment to it's mean value at t0
+YII_0 <- subset(YII, tp == "0")
+YII_0_mean <- YII_0 %>%
+  group_by(ID) %>%
+  get_summary_stats(YII, type = "mean") 
 
-YII_plot <- ggplot(YII_graph, aes(x = tp, y = YII)) +
+YII_relative <- subset(YII, tp != "0")
+
+YII_relative <- full_join(YII_relative, YII_0_mean, by = "ID")
+
+YII_relative <- YII_relative %>% 
+  mutate(relativeYII = 100/mean*YII) 
+
+
+YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
-  geom_smooth(aes(x = tp, y = YII, group = treat, color = treat, fill = treat)) + 
+  geom_smooth(aes(x = tp, y = relativeYII, group = treat, color = treat, fill = treat)) + 
   # brings lines under the boxplots to see changes over time
   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) + 
   scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
   scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
-  ylab("YII") +
+  ylab("Relative Y(II)") +
   xlab("Weeks of exposure") +
   labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
   # create design
@@ -331,7 +368,7 @@ YII_plot <- ggplot(YII_graph, aes(x = tp, y = YII)) +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
         strip.text.x = element_text(face = "italic", size = 12),
-        axis.text.x = element_text(size = 10),
+        axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
@@ -342,9 +379,10 @@ YII_plot <- ggplot(YII_graph, aes(x = tp, y = YII)) +
 YII_plot
 
 
-# ------------- relative electron transport rate
+# ----- 4.4.2. rETR ------------------------------------------------------------
+# ------------ relative electron transport rate
 # exclude t0
-rETRmax <- subset(rETR, tp!= "0")
+rETRmax <- subset(rETR_i, tp!= "0")
 
 rETRmax_plot <- ggplot(rETRmax, aes(x = tp, y = rETRmax)) +
   facet_grid( ~ spec, 
@@ -376,7 +414,7 @@ PAM_plot <-  YII_plot / rETRmax_plot
 PAM_plot
 
 # save plot
-ggsave("out/PAM_plot.png", plot = PAM_plot,
+ggsave("out/PAM_plot_relativeYII.png", plot = PAM_plot,
        scale = 1, width = 18, height = 22, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
 
@@ -437,6 +475,23 @@ ggsave("out/heatmap.png", plot = heatmap,
 
 
 # ----- 5. Supplements  --------------------------------------------------------
+
+# CONTINUE HERE ---------------------
+# standardize each fragment to it's mean value at t0
+FvFm_0 <- subset(FvFm, tp== "0") %>% 
+  # remove unnecessary columns for clear merge
+  dplyr::select(ID, Fv_Fm) %>% 
+  rename(FvFm_t0 = Fv_Fm) 
+
+FvFm_relative <- subset(FvFm, tp!= "0")
+
+FvFm_relative <- full_join(FvFm_relative, FvFm_0, by="ID")
+
+FvFm_relative <- FvFm_relative %>% 
+  mutate(relativeFvFm = 100/FvFm_t0*Fv_Fm) 
+#-------------------------------------
+
+
 ## ---- 5.1. MP concentrations -------------------------------------------------
 Conc_curve <- ggplot(Concentrations, aes(x = days, y = per_L)) +
   geom_smooth(aes(x = days, y = per_L, group = conc, color = conc, fill = conc)) + 
