@@ -26,6 +26,7 @@ library(multcomp)
 # check model fits statistically
 library(performance)
 library(rstatix)
+
 # check model fits visually using qqplot
 library(car)
 
@@ -51,20 +52,20 @@ calcification <- read_rds("processed/weight_growth.rds") %>%
 # relevel treatments in all tables
 ## --- 4.1. Surface ------------------------------------------------------------
 surface$treat <- factor(surface$treat, 
-                              levels = c("control", "0.1", "1",
-                                         "10", "100"))
+                        levels = c("control", "0.1", "1",
+                                   "10", "100"))
 levels(surface$treat)
 
 ## --- 4.2. Volume -------------------------------------------------------------
 volume$treat <- factor(volume$treat, 
-                        levels = c("control", "0.1", "1",
-                                   "10", "100"))
+                       levels = c("control", "0.1", "1",
+                                  "10", "100"))
 levels(volume$treat)
 
 ## --- 4.3. Calcification ------------------------------------------------------
 calcification$treat <- factor(calcification$treat, 
-                        levels = c("control", "0.1", "1",
-                                   "10", "100"))
+                              levels = c("control", "0.1", "1",
+                                         "10", "100"))
 levels(calcification$treat)
 
 
@@ -248,7 +249,7 @@ model_t1_Spi <- glmer((surface_growth+100) ~ treat + (1|col), family = poisson, 
 
 # get summary of glmer
 summary(glht(model_t1_Spi, linfct = mcp(treat = "Tukey")), 
-       test = adjusted("holm"))
+        test = adjusted("holm"))
 # OUTPUT:
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
@@ -339,17 +340,8 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 # create a subset with data of Pve
 Pve_vol <- subset(volume, spec == "Pve")
 
-hist(log((Pve_vol$volume_growth+0.02)))
-
-# Example usage:
-# Assuming 'your_data' is the vector or column containing your data
-Pve_vol$volume_growth_clean <- remove_outliers(Pve_vol$volume_growth)
-
-
-# LMER shows a good fit, therefore GLMER is used
-model_Pve <- lmer(log(((volume_growth_clean+0.02))) ~ conc + (1|col) + (1|time), data = Pve_vol)
-# summary of tested with the LMER differences
-cftest(model_Pve)
+# write LMER, transform data to meet normal distribution
+model_Pve <- lmer(log(volume_growth+0.02) ~ conc + (1|col) + (1|time), data = Pve_vol)
 
 # inspect residuals
 qqPlot(residuals(model_Pve))          # good fit
@@ -357,14 +349,25 @@ shapiro_test(residuals(model_Pve))    # p > 0.05 = Non-Normality
 # OUTPUT: # A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-# 1 residuals(model_Pve)     0.991  0.0986
+# 1 residuals(model_Pve)     0.991  0.106
 check_normality(model_Pve)
-# OK: residuals appear as normally distributed (p = 0.101).
+# OK: residuals appear as normally distributed (p = 0.109).
 check_heteroscedasticity(model_Pve)
-# OK: Error variance appears to be homoscedastic (p = 0.976).
+# OK: Error variance appears to be homoscedastic (p = 0.965).
 
+# summary of tested with the LMER differences
+cftest(model_Pve)
 # OUTPUT:
-#Better update yourself, I messed it up :D
+# Simultaneous Tests for General Linear Hypotheses
+# Fit: lmer(formula = log(((volume_growth + 0.02))) ~ conc + (1 | col) + 
+#             (1 | time), data = Pve_vol)
+# Linear Hypotheses:
+#   Estimate Std. Error z value Pr(>|z|)    
+#   (Intercept) == 0 -3.3211512  0.1473525 -22.539  < 2e-16 ***
+#   conc == 0        -0.0023760  0.0004544  -5.229 1.71e-07 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#   (Univariate p values reported)
 
 
 
@@ -666,7 +669,7 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 ### -- 5.3.1. Pocillopora verrucosa --------------------------------------------
 #### - 5.3.1.1. Overall effect -------------------------------------------------
 # create a subset with data of Pve
-Pve_calc <- subset(calcification, spec == "Pve")
+Pve_calc <- subset(calcification, spec == "Pve") 
 
 # LMER didn't show a good fit, therefore GLMER is used
 model_ot_Pve <- glmer(((weight_growth+100)) ~ conc + (1|col) + (1|time), family = "poisson", data = Pve_calc)
@@ -773,8 +776,22 @@ summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")),
 # create a subset with data of Pve for t2 - t3
 Pve_3_calc <- subset(Pve_calc, time == "3")
 
-# LMER didn't show a good fit, therefore GL MER is used
-model_t3_Pve <- glmer(((weight_growth+100)) ~ treat + (1|col), family = "poisson", data = Pve_3_calc)
+# write LMER 
+model_t3_Pve <- lmer(scale(log(weight_growth+50)) ~ treat + (1|col), data = Pve_3_calc)
+
+# inspect residuals
+qqPlot(residuals(model_t3_Pve))          # good fit
+shapiro_test(residuals(model_t3_Pve))    # p > 0.05 = Normality
+# OUTPUT:
+# A tibble: 1 x 3
+# variable                statistic p.value
+# <chr>                       <dbl>   <dbl>
+# 1 residuals(model_t3_Pve)     0.973  0.0591
+check_normality(model_t3_Pve)
+# OK: residuals appear as normally distributed (p = 0.059).
+check_heteroscedasticity(model_t3_Pve)
+# OK: Error variance appears to be homoscedastic (p = 0.606).
+
 
 # get summary of lmer
 summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")), 
@@ -782,20 +799,20 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 # OUTPUT:
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: glmer(formula = ((weight_growth + 100)) ~ treat + (1 | col), 
-#            data = Pve_3_calc, family = "poisson")
+# Fit: lmer(formula = scale(log(weight_growth + 50)) ~ treat + (1 | 
+#           col), data = Pve_3_calc)
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)   
-#   0.1 - control == 0  0.025612   0.028026   0.914  1.00000   
-#   1 - control == 0    0.045302   0.027891   1.624  0.62591   
-#   10 - control == 0   0.017626   0.028081   0.628  1.00000   
-#   100 - control == 0 -0.059748   0.028635  -2.087  0.25853   
-#   1 - 0.1 == 0        0.019690   0.027710   0.711  1.00000   
-#   10 - 0.1 == 0      -0.007986   0.027901  -0.286  1.00000   
-#   100 - 0.1 == 0     -0.085360   0.028459  -2.999  0.02435 * 
-#   10 - 1 == 0        -0.027675   0.027766  -0.997  1.00000   
-#   100 - 1 == 0       -0.105049   0.028326  -3.709  0.00208 **
-#   100 - 10 == 0      -0.077374   0.028514  -2.714  0.05325 . 
+#   Estimate Std. Error z value Pr(>|z|)  
+# 0.1 - control == 0  0.26556    0.29037   0.915   1.0000  
+# 1 - control == 0    0.36896    0.29037   1.271   1.0000  
+# 10 - control == 0   0.17100    0.29037   0.589   1.0000  
+# 100 - control == 0 -0.51215    0.29037  -1.764   0.5444  
+# 1 - 0.1 == 0        0.10340    0.29037   0.356   1.0000  
+# 10 - 0.1 == 0      -0.09456    0.29037  -0.326   1.0000  
+# 100 - 0.1 == 0     -0.77771    0.29037  -2.678   0.0666 .
+# 10 - 1 == 0        -0.19795    0.29037  -0.682   1.0000  
+# 100 - 1 == 0       -0.88111    0.29037  -3.034   0.0241 *
+# 100 - 10 == 0      -0.68315    0.29037  -2.353   0.1491  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
@@ -958,3 +975,4 @@ mean_weight_growth <- calcification %>% # table
   select(-q1, -q3, -iqr, -mad, -se, -ci, -median) # because only selecting what wanted did not work: remove unnecessary columns
 # write it into .csv
 write_csv2(mean_weight_growth, "out/mean_weight_growth.csv")
+

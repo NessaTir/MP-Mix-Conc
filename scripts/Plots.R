@@ -23,6 +23,7 @@ library(readxl)
 
 # create graphs
 library(ggplot2)
+library(ggpmisc)
 
 # work with summarized data, e.g., means
 library(rstatix)
@@ -53,16 +54,25 @@ volume <- read_rds("processed/volume_growth.rds")
 calcification <- read_rds("processed/weight_growth.rds") 
 
 # Necrosis
+# summary
 necrosis <- read_csv2("out/Summary_necrosis.csv") %>%
+  dplyr::select(-c(1))
+
+# percent
+necrosis_per <- read_csv2("out/necrosis_percent.csv") %>%
   dplyr::select(-c(1))
 
 
 ## ---- 3.4. Photosynthetic efficiency -----------------------------------------
 # effective quantum yield
 YII <- read_rds("processed/light_all.rds")
+# relative YII to t0
+YII_relative <- read_rds("processed/light_relative.rds")
 
 # maximum quantum yield
 FvFm <- read_rds("processed/dark_all.rds")
+# relative YII to t0
+FvFm_relative <- read_rds("processed/dark_relative.rds")
 
 # relative electron transport rate
 rETR <- read_rds("processed/rETR_parameter.rds") %>%
@@ -85,10 +95,10 @@ Polyps <- read_rds("processed/polyp_activity.rds")
 
 
 ## ---- 3.6. z-Values ----------------------------------------------------------
-z_values <- read_csv2("in/z-values_random_t.csv") %>%
-  mutate(z_value = as.numeric(z_value),
-         Parameter = as.factor(Parameter),
-         stars = as.factor(stars))
+#z_values <- read_csv2("in/z-values_random_t.csv") %>%
+# mutate(z_value = as.numeric(z_value),
+#       Parameter = as.factor(Parameter),
+#      stars = as.factor(stars))
 
 ## ---- 3.7. Supplements -------------------------------------------------------
 # MP Concentration measurements
@@ -223,7 +233,7 @@ weight_plot <- calcification %>%
   scale_color_manual(values = color_scheme) +
   geom_errorbar(aes(x = time, ymin = mean-sd, ymax = mean+sd, 
                     color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
-                 position = position_dodge(width = 0.2)) +
+                position = position_dodge(width = 0.2)) +
   geom_point(aes(x =time, y = mean, color = conc), 
              position = position_dodge(width=0.2), size = 1.5) +
   labs(color = "Treatment [mg/l]", fill = "Treatment [mg/l]") +
@@ -249,7 +259,7 @@ weight_plot
 ### --- 4.2.4. Necrosis --------------------------------------------------------
 # level treatment, important for visualisation 
 necrosis$treat <- factor(necrosis$treat,
-                       levels = c("control", "0.1", "1", "10", "100"))
+                         levels = c("control", "0.1", "1", "10", "100"))
 necrosis$cat <- factor(necrosis$cat,
                        levels = c("none", "low", "moderate", "high"))
 # create legend names for category names
@@ -305,11 +315,11 @@ polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
-   scale_x_continuous(labels= c("0", "4", "8", "12")) +
-   scale_color_manual(values = color_scheme,
-                      labels = treat_labs) +
-   scale_fill_manual(values = color_scheme,
+  scale_x_continuous(labels= c("0", "4", "8", "12")) +
+  scale_color_manual(values = color_scheme,
                      labels = treat_labs) +
+  scale_fill_manual(values = color_scheme,
+                    labels = treat_labs) +
   ylab("Mean polyp activity") + 
   xlab("Weeks of exposure") +
   labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
@@ -338,19 +348,7 @@ ggsave("out/polyps.png", plot = polyps,
 
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
 # ----- 4.4.1. Effective quantum yield -----------------------------------------
-# standardize each fragment to it's mean value at t0
-YII_0 <- subset(YII, tp == "0")
-YII_0_mean <- YII_0 %>%
-  group_by(ID) %>%
-  get_summary_stats(YII, type = "mean") 
-
-YII_relative <- subset(YII, tp != "0")
-
-YII_relative <- full_join(YII_relative, YII_0_mean, by = "ID")
-
-YII_relative <- YII_relative %>% 
-  mutate(relativeYII = 100/mean*YII) 
-
+# use standardized (each fragment to it's mean value at t0) values
 
 YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
   facet_grid( ~ spec, 
@@ -419,8 +417,8 @@ ggsave("out/PAM_plot_relativeYII.png", plot = PAM_plot,
        dpi = 600, limitsize = TRUE)  
 
 
-  
-  
+
+
 ## ---- 4.5. Heatmap of z-values -----------------------------------------------
 # level Parameter in right order
 z_values$Parameter <- factor(z_values$Parameter, 
@@ -453,12 +451,12 @@ heatmap <- ggplot(z_values, aes(Species, Parameter, fill = z_value))+
                               "YII" = "Y(II)", "Fv_Fm" = "Fv/Fm", "rETRmax" =" rETRmax", "Ek" = "Ek", "alpha" = "Alpha")) +
   scale_x_discrete(label = spec_labs) +
   geom_text(aes(label = stars), color = c("white"), size = 5,
-                fill = NA, label.color = NA) +
+            fill = NA, label.color = NA) +
   ylab("Parameter") + 
   xlab("") +
   theme_minimal(base_size = 8) +
   theme(strip.background = element_blank(),
-       # strip.text.x = element_text(face = "italic", size = 12),
+        # strip.text.x = element_text(face = "italic", size = 12),
         axis.text.x = element_text(size = 10, face = "italic", angle = 90),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 12),
@@ -472,6 +470,192 @@ heatmap
 ggsave("out/heatmap.png", plot = heatmap,
        scale = 1, width = 8, height = 12, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
+
+## ---- 4.6. Advanced heatmap as correlation plots -------------------------
+# create summary table with cumulative surface growth week 0-12
+surface_all <-  surface %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # add column with parameter
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(surface_growth)) %>% 
+  mutate(parameter = "surface",
+         conc = as.numeric(conc)) 
+
+# create summary table with cumulative volume growth week 0-12
+volume_all <-  volume %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(volume_growth))%>% 
+  mutate(parameter = "volume",
+         conc = as.numeric(conc)) 
+
+# create summary table with cumulative weight growth week 0-12
+calcification_all <-  calcification %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = sum(weight_growth))%>% 
+  mutate(parameter = "calcification",
+         conc = as.numeric(conc)) 
+
+# create summary table with relative necrosis after 12 weeks
+necrosis_all <-  necrosis_per %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = necro_per) %>% 
+  mutate(parameter = "necrosis",
+         conc = as.numeric(conc)) 
+necrosis_all <- necrosis_all %>%
+  # remove unnecessary colums
+  dplyr::select(-necro_occured, -treatment, -col, -tank, -tp, -treat)
+
+# create summary table with relative YII after 12 weeks
+YII_all <-  YII_relative %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = relativeYII) %>% 
+  # use mean
+  mutate(parameter = "YII")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+# create summary table with relative FvFm after 12 weeks
+FvFm_all <-  FvFm_relative %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = relativeFv_Fm) %>% 
+  # use mean
+  mutate(parameter = "FvFm")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+# create summary table with rETR after 12 weeks
+rETR_all <-  rETR_i %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = rETRmax) %>% 
+  # use mean
+  mutate(parameter = "rETRmax")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+
+# create summary table with alpha after 12 weeks
+alpha_all <-  rETR_i %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = alpha) %>% 
+  # use mean
+  mutate(parameter = "alpha")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+
+# create summary table with Ek after 12 weeks
+Ek_all <-  rETR_i %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = Ek) %>% 
+  # use mean
+  mutate(parameter = "Ek")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+# create summary table with mean polyp acrtivity over time of exposure
+polypactivity_all <-  Polyps %>%
+  # select only the last timepoint
+  filter(tp!="0") %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = mean(ranks))%>% 
+  mutate(parameter = "polypactivity",
+         conc = as.numeric(conc)) 
+
+# bring all tables together
+all_data <- rbind(surface_all, volume_all, calcification_all, necrosis_all,
+                  polypactivity_all,
+                  YII_all, FvFm_all, 
+                  rETR_all, alpha_all, Ek_all)
+
+all_data$parameter <- factor(all_data$parameter, 
+                             levels = c("surface", "volume", "calcification", "necrosis", "polypactivity",
+                                        "YII", "FvFm", "rETRmax", "Ek", "alpha"))
+
+
+ggplot(all_data, aes(conc, value)) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10')+
+  stat_correlation(p.digits = 4,
+                   aes(label = paste(after_stat(r.label),
+                                     after_stat(p.value.label),
+                                     sep = "*\"; \"*")),
+                   method = "pearson", conf.level = 0.95) +
+  xlab("Treatment (mg/l)") + 
+  ylab("Value") +
+  # stat_correlation(use_label(c("R", "P")))+
+  theme_bw()+
+  theme(#legend.position= "none", #c(0.1, 0.9),
+    #legend.direction = "horizontal",
+    # legend.text = element_text(size = 10),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_text(face = "italic", size = 12),
+    strip.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12))
+
+# Statistics for supplement table
+#surface_all %>%
+# select only Pve
+#filter(spec == "Pve") %>%
+# cor_test(surface_all, vars1 = "value", 
+#         vars2 = "conc", method = "pearson")
+
+
+# cor.test(surface_all$conc, surface_all$value, subset = (surface_all$spec == "Pve"), method = "pearson", conf.level = 0.95)
+
+
+
+# safe graph
+ggsave("out/correlations_log.png", plot = last_plot(),
+       scale = 1, width = 18, height = 24, units = c("cm"),
+       dpi = 600, limitsize = TRUE)  
+
 
 
 # ----- 5. Supplements  --------------------------------------------------------
@@ -543,3 +727,4 @@ write_csv2(mean_Size, "out/mean_MP_size.csv")
 
 # ----- 6. Write tables --------------------------------------------------------
 ## ---- 6.1. MP Size measurements ----------------------------------------------
+

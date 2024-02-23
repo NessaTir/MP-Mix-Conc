@@ -71,11 +71,11 @@ Polyps <- polyp_data_wide  %>%
 
 # level polyp activity
 Polyps$activity <- factor(Polyps$activity, 
-                               levels = c("a", "ma", "ia"))
+                          levels = c("a", "ma", "ia"))
 
 # level treatment, important for visualisation 
 Polyps$treat <- factor(Polyps$treat, 
-                            levels = c("control", "0.1", "1", "10", "100"))
+                       levels = c("control", "0.1", "1", "10", "100"))
 
 
 ## ---- 4.2. Convert categories of polyp activity in numbers -------------------
@@ -83,7 +83,7 @@ Polyps$treat <- factor(Polyps$treat,
 # convert moderately active into '0.5'
 # convert inactive into          '0'
 Polyps <- Polyps %>% 
- # create a new column (ranks) with converted categories
+  # create a new column (ranks) with converted categories
   mutate(ranks = case_when(activity == "a"~ "1",
                            activity == "ma"~ "0.5",
                            activity == "ia"~ "0"),
@@ -380,7 +380,7 @@ check_heteroscedasticity(model_t0_Spi)
 
 # get summary of LMER
 summary(glht(model_t0_Spi, linfct = mcp(treat = "Tukey")), 
-                       test = adjusted("holm"))
+        test = adjusted("holm"))
 # OUTPUT:
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
@@ -563,3 +563,4 @@ Spi_sum <- Spi %>%
   get_summary_stats(ranks, type = "mean")
 
 write_csv2(Spi_sum, "out/polyp_mean_Spi.csv")
+

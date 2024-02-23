@@ -48,7 +48,7 @@ raw_t0 <- read_tsv("in/t0_basic.txt") %>%
          vol_t0 = Volume) %>%
   select(-Vertices, -Edges, -Faces) %>%
   # split Filename column into different colums to create ID colums. 
-    # Get timepoint (tp), species (spec), colony (col) and tank
+  # Get timepoint (tp), species (spec), colony (col) and tank
   separate(Filename, c('tp', 'spec', 'col', 'tank')) %>%
   # unite spec, col and tank to get ID
   unite(ID, c(spec, col, tank), sep = "_", remove = FALSE) %>%
@@ -358,8 +358,8 @@ surface_rates <- all_growth %>%
                values_to = "surface_growth", values_drop_na = FALSE)  %>% 
   # rename entires of new column
   mutate(time = case_when(time == "growth_surf_1"~ "1",
-                        time == "growth_surf_2" ~ "2",
-                        time == "growth_surf_3"~ "3"),
+                          time == "growth_surf_2" ~ "2",
+                          time == "growth_surf_3"~ "3"),
          time = as.numeric(as.character(time))) # change to numeric, to adjust x-axis
 
 # volume
@@ -413,3 +413,4 @@ write_rds(surface_rates, "processed/surface_growth.rds")
 write_rds(volume_rates, "processed/volume_growth.rds")
 write_rds(weight_rates, "processed/weight_growth.rds")
 write_rds(necrosis_percent, "processed/necrosis_percent.rds")
+

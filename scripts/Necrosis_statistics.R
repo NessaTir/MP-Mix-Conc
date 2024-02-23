@@ -1,9 +1,9 @@
 # ----- 1. Explanation of this script ----
-  # This script focuses on the assessment of coral necrosis.
-  # Occurence of necrosis was assessed visually as yes/no for every sampling timepoint
-  # Relative necrosis was measured using 3D Scanning
-  # This script builds up on data tables produced in the script 'Growth_data_processing'
-  
+# This script focuses on the assessment of coral necrosis.
+# Occurence of necrosis was assessed visually as yes/no for every sampling timepoint
+# Relative necrosis was measured using 3D Scanning
+# This script builds up on data tables produced in the script 'Growth_data_processing'
+
 # ----- 2. Load in needed packages -------
 # to easily clean data, to read in .rds files 
 library(tidyverse)
@@ -33,12 +33,12 @@ Necro_occurence <- read.csv2("in/necrosis.csv") %>%
   rename("2" = "necro_t2") %>% 
   rename("3" = "necro_t3") %>%  
   # bring table into long format
-  pivot_longer(cols = c('0', '1', '2', '3'), # use previous colums as new entries - categories
+  pivot_longer(cols = c('0', '1', '2', '3'), # use previous columns as new entries - categories
                names_to = 'tp',  # assign new name for the column of tp
                values_to = 'necro_occured') # assign new name for the values previously in the column under the headers above
 
 # Percent of difference between living tissue area and surface area
-  # to bring together with the observed occurrences
+# to bring together with the observed occurrences
 Necro_percent <- read_rds("processed/necrosis_percent.rds")
 
 
@@ -47,12 +47,12 @@ Necro_occurence <- Necro_occurence %>%
   # create a new column to get a clean merge
   unite(ID_tp, c(ID, tp), sep="_", remove=FALSE) %>%
   # leave out some columns to have a cleaner merge with the percent table
-  dplyr::select(-ID, -spec, -col, -origin, -tank, -tp, -treat)
+  dplyr::select(-ID, -spec, -col, -origin, -tank, -tp, -treat, -conc)
 Necro_percent <- Necro_percent %>%
   # create a new column to get a clean merge
   unite(ID_tp, c(ID, tp), sep="_", remove=FALSE) %>%
   # leave out some columns to have a cleaner merge with the percent table
-  dplyr::select(-ID, -spec, -col, -tank, -tp, -treat, -conc)
+  dplyr::select(-ID, -spec, -col, -tank, -tp)
 
 # merge into one table
 Necrosis <-   merge(Necro_percent, Necro_occurence, by = 'ID_tp', all.x = TRUE) %>%
@@ -69,10 +69,10 @@ Necrosis <-   merge(Necro_percent, Necro_occurence, by = 'ID_tp', all.x = TRUE) 
 Necrosis <- Necrosis %>% 
   mutate(treat = as.factor(treat),
          treatment = case_when(treat == "control" ~ "control",
-                           treat == 0.1 ~ "A",
-                           treat == 1 ~ "B",
-                           treat == 10 ~ "C",
-                           TRUE ~ "D"))
+                               treat == 0.1 ~ "A",
+                               treat == 1 ~ "B",
+                               treat == 10 ~ "C",
+                               TRUE ~ "D"))
 
 # create a new column (necro_per) for necrosis corrected for occurence
 Necrosis <- Necrosis %>%
@@ -84,7 +84,7 @@ Necrosis <- Necrosis %>%
 
 # replace NAs of positive necrotic occurence with the relative necrotic surface area from 'necrosis'
 Necrosis$necro_per <- ifelse(is.na(Necrosis$necro_per),
-                        Necrosis$necrosis, Necrosis$necro_per)
+                             Necrosis$necrosis, Necrosis$necro_per)
 
 # delete old, now in "necro_per" corrected column of necrosis "necrosis" to avoid confusion
 Necrosis <- Necrosis %>%
@@ -93,9 +93,8 @@ Necrosis <- Necrosis %>%
 # check levels of certain columns to evaluate for releveling 
 # use treatment as categories not numbers (if numbers necessary: use "conc" column)
 Necrosis$treat <- factor(Necrosis$treat, 
-                            levels = c("control", "0.1", "1", "10", "100"))
+                         levels = c("control", "0.1", "1", "10", "100"))
 # levels(Necrosis$treat)
-
 
 
 
@@ -117,7 +116,7 @@ Necrosis$treat <- factor(Necrosis$treat,
 Pve_necrosis <- subset(Necrosis, spec == "Pve")
 
 # LMER didn't show a good fit - GLMER is used
-model_Pve <- glmer((necro_per) ~ conc + (1|col) + (1|time), family = "poisson", data = Pve_necrosis)
+model_Pve <- glmer((necro_per) ~ conc + (1|col) + (1|tp), family = "poisson", data = Pve_necrosis)
 # summary of tested with the GLMER differences
 cftest(model_Pve)
 # OUTPUT:
@@ -329,7 +328,12 @@ summary(glht(model_Spi_t3, linfct = mcp(treat = "Tukey")),
 
 
 
-# ---- 6. Write tables ----
+
+# ---- 6. Write tables ---------------------------------------------------------
+# ---- 6.1. Necrosis percent table ---------------------------------------------
+# Percent necrosis for all
+write.csv2(Necrosis, "out/necrosis_percent.csv")
+
 # ---- 6.1. Categorize severity of necrosis ------------------------------------
 # imporant for visualization
 # according to Marshall and Schuttenberg 2006
@@ -338,14 +342,16 @@ summary(glht(model_Spi_t3, linfct = mcp(treat = "Tukey")),
 # high: > 50%
 Necrosis_category <- Necrosis %>% 
   mutate(cat = case_when(necro_per >= 50 ~ "high",
-                           necro_per >= 10 ~ "moderate",
-                           necro_per >= 1 ~ "low",
-                           TRUE ~ "none"))
+                         necro_per >= 10 ~ "moderate",
+                         necro_per >= 1 ~ "low",
+                         TRUE ~ "none"))
 
-## --- 6.3.  Summary of necrosis occurences ----
+
+
+## --- 6.2.  Summary of necrosis occurences ------------------------------------
 # level the categories
 Necrosis_category$cat <- factor(Necrosis_category$cat, 
-                              levels = c( "none", "low", "moderate", "high"))
+                                levels = c( "none", "low", "moderate", "high"))
 
 # create a table with percentages of the categories (cat)
 # per Species (spec), treatment (treat), timepoint (tp)
@@ -353,3 +359,4 @@ Summary_necrosis <- Necrosis_category %>%
   freq_table(spec, treat, tp, cat, na.rm = T)
 
 write.csv2(Summary_necrosis, "out/Summary_necrosis.csv")
+

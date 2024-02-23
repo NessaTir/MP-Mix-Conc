@@ -12,7 +12,7 @@
 
 # ----- 2. Load in needed packages ---------------------------------------------
 
-# to easily clean data, to read in .rds files 
+# to easily clean data 
 library(tidyverse)
 library(dplyr)
 
@@ -36,7 +36,7 @@ library(car)
 # read in list with overview of all corals used and their treatments etc.
 corals <- read_csv("in/coral_treatments.csv") %>%
   dplyr::mutate(treat = as.factor(treat), # column for categorical model
-         conc = as.numeric(conc)) # column for continuous model 
+                conc = as.numeric(conc)) # column for continuous model 
 
 ## --- 3.2. Light adapted PAM data ---------------------------------------------
 # read in tables for preparing and analysing Y(II)
@@ -166,8 +166,8 @@ light_all <- rbind(light_0, light_1, light_2, light_3) %>%
 
 # relevel treatments
 light_all$treat <- factor(light_all$treat, 
-                         levels = c("control", "0.1", "1",
-                                    "10", "100"))
+                          levels = c("control", "0.1", "1",
+                                     "10", "100"))
 
 
 
@@ -259,20 +259,19 @@ model1_Pve <- glmer((relativeYII) ~ conc + (1|col) + (1|tp), family = poisson, d
 # get summary of GLMER
 cftest(model1_Pve)
 # OUTPUT:  Simultaneous Tests for General Linear Hypotheses
-# Fit: glmer(formula = (relativeYII) ~ conc + (1 | col) + (1 | tp), family = poisson, data = Pve_overall_effect)
+# Fit: glmer(formula = relativeYII ~ conc + (1 | col) + (1 | tp), family = poisson, data = Pve_overall_effect)
 # Linear Hypotheses:
 # Estimate Std. Error z value Pr(>|z|)    
 # (Intercept) == 0 4.6301317  0.7071406   6.548 5.84e-11 ***
 #  conc == 0        0.0001469  0.0001529   0.961    0.337    
 # ---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-#   (Univariate p values reported)
 
 
 #### -- 5.1.1.2 Specific effects -----------------------------------------------
 # ------------- t1
 # create a subset with data of Pve, to test differences at t1
-Pve_light_t1 <- subset(Light_mean, spec == "Pve" & tp == "1")
+Pve_light_t1 <- subset(Light_relative, spec == "Pve" & tp == "1")
 
 # LMER didn't show a good fit - write GLMER
 model_t1_Pve <- glmer((relativeYII) ~ treat + (1|col), family = poisson, data = Pve_light_t1)
@@ -336,7 +335,7 @@ summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")),
 # 100 - 0.1 == 0      0.50020    0.32548   1.537        1
 # 10 - 1 == 0         0.14345    0.32548   0.441        1
 # 100 - 1 == 0        0.17031    0.32548   0.523        1
-# 100 - 10 == 0       0.02686    0.32548   0.083        1  
+# 100 - 10 == 0       0.02686    0.32548   0.083        1 
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
@@ -388,8 +387,8 @@ summary(glht(model_t3_Pve, linfct = mcp(treat = "Tukey")),
 # create a subset with data of Spi, t0 excluded for continuous model
 Spi_overall_effect <- subset(Light_relative, spec == "Spi" & tp!= "0")
 
-# LMER didn't show a good fit - GLMER is used
-model1_Spi <- glmer(relativeYII ~ conc + (1|col) + (1|tp), family = poisson, data = Spi_overall_effect)
+# LMER didn't show a good fit, therefore GLMER is used
+model1_Spi <- glmer((relativeYII) ~ conc + (1|col) + (1|tp), family = poisson, data = Spi_overall_effect)
 
 # get summary of GLMER
 cftest(model1_Spi)
@@ -421,7 +420,7 @@ shapiro_test(residuals(model_t1_Spi))    # p > 0.05 = Normality
 # <chr>                       <dbl>   <dbl>
 #   1 residuals(model_t1_Spi)     0.981  0.219
 check_normality(model_t1_Spi)
-# OK: residuals appear as normally distributed (p = 0.219).
+# OK: residuals appear as normally distributed (p = 0.219)
 check_heteroscedasticity(model_t1_Spi)
 # OK: Error variance appears to be homoscedastic (p = 0.901).
 
@@ -461,7 +460,7 @@ shapiro_test(residuals(model_t2_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t2_Spi)     0.974   0.0635
+#   1 residuals(model_t2_Spi)     0.974  0.0635
 check_normality(model_t2_Spi)
 # OK: residuals appear as normally distributed (p = 0.063).
 check_heteroscedasticity(model_t2_Spi)
@@ -557,6 +556,7 @@ Dark_relative <- Dark_relative %>%
 
 ### --- 5.2.1. Pocillopora verrucosa -------------------------------------------
 #### -- 5.2.1.1 Overall effect -------------------------------------------------
+# create a subset with data of Pve, t0 excluded for continuous model
 Pve_overall_effect <- subset(Dark_relative, spec == "Pve" & tp!= "0")
 
 # write LMER
@@ -568,7 +568,7 @@ shapiro_test(residuals(model1_Pve))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable              statistic p.value
 # <chr>                     <dbl>   <dbl>
-#   1 residuals(model1_Pve)     0.993  0.196
+#  1 residuals(model1_Pve)     0.993   0.196
 check_normality(model1_Pve)
 # OK: residuals appear as normally distributed (p = 0.202).
 check_heteroscedasticity(model1_Pve)
@@ -639,25 +639,28 @@ Pve_dark_t2 <- subset(Dark_relative, spec == "Pve" & tp == "2")
 # LMER didn't show good fit - GLMER was used
 model_t2_Pve <- glmer((relativeFv_Fm) ~ treat + (1|col), family = poisson, data = Pve_dark_t2)
 
-# get summary of GLMER
+# get summary of LMER
 summary(glht(model_t2_Pve, linfct = mcp(treat = "Tukey")), 
         test = adjusted("holm"))
 # OUTPUT:
 # Simultaneous Tests for General Linear Hypotheses
 # Multiple Comparisons of Means: Tukey Contrasts
-# Fit: lmer(formula = scale(Fv_Fm) ~ treat + (1 | col), data = Pve_dark_t2)
+# Fit: glmer(formula = (relativeFv_Fm) ~ treat + (1 | col), data = Pve_dark_t2, 
+#       family = poisson)
 # Linear Hypotheses:
-#   Estimate Std. Error z value Pr(>|z|)
-# 0.1 - control == 0  0.26879    0.30089   0.893        1
-# 1 - control == 0    0.22940    0.30089   0.762        1
-# 10 - control == 0   0.38475    0.30089   1.279        1
-# 100 - control == 0  0.35230    0.30089   1.171        1
-# 1 - 0.1 == 0       -0.03939    0.30089  -0.131        1
-# 10 - 0.1 == 0       0.11596    0.30089   0.385        1
-# 100 - 0.1 == 0      0.08350    0.30089   0.278        1
-# 10 - 1 == 0         0.15535    0.30089   0.516        1
-# 100 - 1 == 0        0.12289    0.30089   0.408        1
-# 100 - 10 == 0      -0.03246    0.30089  -0.108        1
+# Estimate Std. Error z value Pr(>|z|)    
+# 0.1 - control == 0 -0.03342    0.03144  -1.063 0.863322    
+# 1 - control == 0   -0.12987    0.03223  -4.029 0.000392 ***
+# 10 - control == 0  -0.19177    0.03278  -5.851 4.90e-08 ***
+# 100 - control == 0 -0.01178    0.03126  -0.377 0.985072    
+# 1 - 0.1 == 0       -0.09645    0.03249  -2.969 0.014957 *  
+# 10 - 0.1 == 0      -0.15835    0.03303  -4.794 1.31e-05 ***
+# 100 - 0.1 == 0      0.02164    0.03153   0.686 0.985072    
+# 10 - 1 == 0        -0.06190    0.03379  -1.832 0.267785    
+# 100 - 1 == 0        0.11809    0.03232   3.653 0.001554 ** 
+# 100 - 10 == 0       0.17999    0.03287   5.477 3.90e-07 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # (Adjusted p values reported -- holm method)
 
 
@@ -797,7 +800,9 @@ summary(glht(model_t2_Spi, linfct = mcp(treat = "Tukey")),
 # (Adjusted p values reported -- holm method)
 
 
+
 # ------------- t3
+# create a subset with data of Spi, to test differences at t3
 Spi_dark_t3 <- subset(Dark_relative, spec == "Spi" & tp == "3")
 
 # write LMER
@@ -809,7 +814,7 @@ shapiro_test(residuals(model_t3_Spi))    # p > 0.05 = Normality
 # OUTPUT: A tibble: 1 x 3
 # variable                statistic p.value
 # <chr>                       <dbl>   <dbl>
-#   1 residuals(model_t3_Spi)     0.9992  0.848
+#   1 residuals(model_t3_Spi)     0.992  0.848
 check_normality(model_t3_Spi)
 # OK: residuals appear as normally distributed (p = 0.848).
 check_heteroscedasticity(model_t3_Spi)
@@ -839,7 +844,15 @@ summary(glht(model_t3_Spi, linfct = mcp(treat = "Tukey")),
 
 # ----- 6. Write tables --------------------------------------------------------
 ## ---- 6.1. Table of all light adapted PAM data -------------------------------
+# absolute values
 write_rds(light_all, "processed/light_all.rds")
+
+#relative values
+write_rds(Light_relative, "processed/light_relative.rds")
 
 ## ---- 6.2. Table of all dark adapted PAM data --------------------------------
 write_rds(dark_all, "processed/dark_all.rds")
+
+#relative values
+write_rds(Dark_relative, "processed/dark_relative.rds")
+
