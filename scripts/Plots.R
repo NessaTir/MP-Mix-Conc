@@ -153,7 +153,7 @@ surface_plot <- surface %>%
                 position = position_dodge(width = 0.2)) +
   geom_point(aes(x = time, y = mean, color = conc), 
              position = position_dodge(width=0.2), size = 1.5) +
-  labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
+  labs(color = expression(paste("Treatment ", mg, "·", L^-1)), fill = "Treatment (mg/l)") +
   ylab(expression(atop(Cumulative~tissue, growth~("%")))) +
   theme_classic() +
   # design theme
@@ -279,7 +279,7 @@ necro_plot <- necrosis %>%
                      labels = cat_labs) +
   scale_fill_manual(guide = 'none', values = color_scheme_2)+
   scale_x_discrete(labels = treat_labs) +
-  labs(x = "Treatment (mg/l)",
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)),
        y = "Necrosis (%)",
        title = "") +
   # design theme
@@ -616,6 +616,7 @@ ggplot(all_data, aes(conc, value)) +
              labeller = labeller(spec = spec_labs)) +
   geom_point() +
   stat_poly_line(color = "black") +
+  #scale_color_continuous(treat = color_scheme) +
   scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
   scale_y_continuous(trans='log10')+
   stat_correlation(p.digits = 4,
@@ -623,8 +624,8 @@ ggplot(all_data, aes(conc, value)) +
                                      after_stat(p.value.label),
                                      sep = "*\"; \"*")),
                    method = "pearson", conf.level = 0.95) +
-  xlab("Treatment (mg/l)") + 
-  ylab("Value") +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Value") +
   # stat_correlation(use_label(c("R", "P")))+
   theme_bw()+
   theme(#legend.position= "none", #c(0.1, 0.9),
@@ -639,17 +640,6 @@ ggplot(all_data, aes(conc, value)) +
     axis.title.x = element_text(size = 12),
     axis.title.y = element_text(size = 12))
 
-# Statistics for supplement table
-#surface_all %>%
-# select only Pve
-#filter(spec == "Pve") %>%
-# cor_test(surface_all, vars1 = "value", 
-#         vars2 = "conc", method = "pearson")
-
-
-# cor.test(surface_all$conc, surface_all$value, subset = (surface_all$spec == "Pve"), method = "pearson", conf.level = 0.95)
-
-
 
 # safe graph
 ggsave("out/correlations_log.png", plot = last_plot(),
@@ -659,6 +649,38 @@ ggsave("out/correlations_log.png", plot = last_plot(),
 
 
 # ----- 5. Supplements  --------------------------------------------------------
+## ---- 5.1. Advanced Hearmap --------------------------------------------------
+# Statistics for supplement table
+# Surface Pve
+surface_Pve <- subset(surface_all, spec == "Pve")
+cor.test(surface_Pve$value, surface_Pve$conc,  conf.level = 0.95, method = "pearson")
+# OUTPUT: 	Pearson's product-moment correlation
+# data:  surface_Pve$value and surface_Pve$conc
+# t = -3.2999, df = 88, p-value = 0.001398
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#  -0.5042723 -0.1339487
+# sample estimates:
+#  cor 
+# -0.3318348 
+
+# Surface Spi
+surface_Spi <- subset(surface_all, spec == "Spi")
+cor.test(surface_Spi$value, surface_Spi$conc,  conf.level = 0.95, method = "pearson")
+# OUTPUT: 	Pearson's product-moment correlation
+# data:  surface_Pve$value and surface_Pve$conc
+# t = -3.2999, df = 88, p-value = 0.001398
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#  -0.5042723 -0.1339487
+# sample estimates:
+#  cor 
+# -0.3318348 
+
+
+
+
+
 
 # CONTINUE HERE ---------------------
 # standardize each fragment to it's mean value at t0
