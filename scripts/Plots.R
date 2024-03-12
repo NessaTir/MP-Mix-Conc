@@ -360,7 +360,7 @@ YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
   scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
   ylab("Relative Y(II)") +
   xlab("Weeks of exposure") +
-  labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
+  labs(color = expression(paste("Treatment ", mg, "·", L^-1)), fill = expression(paste("Treatment ", mg, "·", L^-1))) +
   # create design
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
@@ -413,7 +413,7 @@ PAM_plot
 
 # save plot
 ggsave("out/PAM_plot_relativeYII.png", plot = PAM_plot,
-       scale = 1, width = 18, height = 22, units = c("cm"),
+       scale = 1, width = 12, height = 20, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
 
 
@@ -468,7 +468,7 @@ heatmap
 
 # safe graph
 ggsave("out/heatmap.png", plot = heatmap,
-       scale = 1, width = 8, height = 12, units = c("cm"),
+       scale = 1, width = 8, height = 1, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
 
 ## ---- 4.6. Advanced heatmap as correlation plots -------------------------
