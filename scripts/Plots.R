@@ -94,20 +94,14 @@ rETR_i <-  merge(corals, rETR, by = 'ID', all.x = TRUE)
 Polyps <- read_rds("processed/polyp_activity.rds")
 
 
-## ---- 3.6. z-Values ----------------------------------------------------------
-#z_values <- read_csv2("in/z-values_random_t.csv") %>%
-# mutate(z_value = as.numeric(z_value),
-#       Parameter = as.factor(Parameter),
-#      stars = as.factor(stars))
-
-## ---- 3.7. Supplements -------------------------------------------------------
+## ---- 3.6. Supplements -------------------------------------------------------
 # MP Concentration measurements
 Concentrations <- read_csv2("in/Concentration_newformat.csv") %>%
   mutate(per_L = ((count/volume)*1000),
          tank = as.character(tank))
 
 # MP Size measurements
-MP_size <- read_csv2("in/MP_sizes.csv")
+# MP_size <- read_csv2("in/MP_sizes.csv")
 
 
 
@@ -312,7 +306,7 @@ ggsave("out/growth.png", plot = growth_plot,
 
 ## ---- 4.3. Polyp activity ----------------------------------------------------
 polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
-  facet_grid( ~ spec, 
+  facet_grid(rows = vars(spec), 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
   scale_x_continuous(labels= c("0", "4", "8", "12")) +
@@ -327,7 +321,7 @@ polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
-        strip.text.x = element_text(face = "italic", size = 12),
+        strip.text.y = element_text(face = "italic", size = 12),
         axis.text.x = element_text(size = 10),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
@@ -341,13 +335,13 @@ polyps
 
 # save plot
 ggsave("out/polyps.png", plot = polyps,
-       scale = 1, width = 18, height = 14, units = c("cm"),
+       scale = 1, width = 12, height = 20, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
 
 
 
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
-# ----- 4.4.1. Effective quantum yield -----------------------------------------
+### --- 4.4.1. Effective quantum yield -----------------------------------------
 # use standardized (each fragment to it's mean value at t0) values
 
 YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
@@ -377,7 +371,7 @@ YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
 YII_plot
 
 
-# ----- 4.4.2. rETR ------------------------------------------------------------
+### --- 4.4.2. rETR ------------------------------------------------------------
 # ------------ relative electron transport rate
 # exclude t0
 rETRmax <- subset(rETR_i, tp!= "0")
@@ -418,60 +412,8 @@ ggsave("out/PAM_plot_relativeYII.png", plot = PAM_plot,
 
 
 
-
-## ---- 4.5. Heatmap of z-values -----------------------------------------------
-# level Parameter in right order
-z_values$Parameter <- factor(z_values$Parameter, 
-                             levels = c("alpha", "Ek", "rETRmax", "Fv_Fm", "YII",
-                                        "polypactivity", 
-                                        "weight", "volume", "surface"))
-
-# add asterids 
-z_values_end <- z_values %>%
-  mutate(
-    label = case_when(
-      p > 0.05 ~ "",
-      p > 0.01 ~ "*",
-      p > 0.001 ~ "**",
-      !is.na(p) ~ "***",
-      TRUE ~ NA_character_
-    )
-  )
-
-
-
-heatmap <- ggplot(z_values, aes(Species, Parameter, fill = z_value))+
-  geom_tile(color= c("white"), size=0.1) +
-  # create color gradient
-  scale_fill_gradient2(low = "#652966",
-                       mid = "#7998cc",
-                       high = '#4AC424') +
-  scale_y_discrete(labels = c("surface" = "Tissue growth", "volume" = "Volume growth", "weight" = "Calcification",
-                              "polypactivity" = "Polypactivity", 
-                              "YII" = "Y(II)", "Fv_Fm" = "Fv/Fm", "rETRmax" =" rETRmax", "Ek" = "Ek", "alpha" = "Alpha")) +
-  scale_x_discrete(label = spec_labs) +
-  geom_text(aes(label = stars), color = c("white"), size = 5,
-            fill = NA, label.color = NA) +
-  ylab("Parameter") + 
-  xlab("") +
-  theme_minimal(base_size = 8) +
-  theme(strip.background = element_blank(),
-        # strip.text.x = element_text(face = "italic", size = 12),
-        axis.text.x = element_text(size = 10, face = "italic", angle = 90),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 12),
-        axis.text.y = element_text(size = 10),
-        legend.text = element_text(size = 10))
-
-# show graph 
-heatmap
-
-# safe graph
-ggsave("out/heatmap.png", plot = heatmap,
-       scale = 1, width = 8, height = 1, units = c("cm"),
-       dpi = 600, limitsize = TRUE)  
-
-## ---- 4.6. Advanced heatmap as correlation plots -------------------------
+## ---- 4.5. Correlation graph -------------------------------------------------
+# ----- SURFACE
 # create summary table with cumulative surface growth week 0-12
 surface_all <-  surface %>%
   # separate by species and concentration
@@ -484,6 +426,54 @@ surface_all <-  surface %>%
   mutate(parameter = "surface",
          conc = as.numeric(conc)) 
 
+# write it into .csv
+write_csv2(surface_all, "processed/surface_all.csv")
+
+# create the base graph
+surf_cor <- ggplot(surface_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Tissue growth (%)") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_text(face = "italic", size = 12),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+# create table with statistical results
+annotation_surf_cor <- data.frame(
+  parameter = factor(x = c("surface"), 
+                     levels = c("surface")),
+  value = c(75),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.0014, r = -0.3318 ", 
+            "p = 0.2749, r = -0.122"))
+
+
+# add statistics to graph
+SURF <- surf_cor + geom_text(data = annotation_surf_cor,
+                              mapping = aes(x = conc, y = value,
+                                            label = label),
+                              color = "black",
+                              size = 3)
+SURF
+
+# ----- VOLUME
 # create summary table with cumulative volume growth week 0-12
 volume_all <-  volume %>%
   # separate by species and concentration
@@ -494,6 +484,55 @@ volume_all <-  volume %>%
   summarise(value = sum(volume_growth))%>% 
   mutate(parameter = "volume",
          conc = as.numeric(conc)) 
+
+# write it into .csv
+write_csv2(volume_all, "processed/volume_all.csv")
+
+# create the base graph
+vol_cor <- ggplot(volume_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = expression(paste("Volume growth ", cm^3, "·", cm^-2))) +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+# create table with statistical results
+annotation_vol_cor <- data.frame(
+  parameter = factor(x = c("volume"), 
+                     levels = c("volume")),
+  value = c(0.15),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.0015, r = -0.3349", 
+            "p = 0.0938, r = -0.1798"))
+
+# add statistics to graph
+VOL <- vol_cor + geom_text(data = annotation_vol_cor,
+                     mapping = aes(x = conc, y = value,
+                                   label = label),
+                     color = "black",
+                     size = 3)
+VOL
+
+
+
 
 # create summary table with cumulative weight growth week 0-12
 calcification_all <-  calcification %>%
@@ -506,6 +545,51 @@ calcification_all <-  calcification %>%
   mutate(parameter = "calcification",
          conc = as.numeric(conc)) 
 
+# write it into .csv
+write_csv2(calcification_all, "processed/calcification_all.csv")
+
+calc_cor <- ggplot(calcification_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = expression(paste("Calcification ", mg, "·", cm^-2))) +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_calc_cor <- data.frame(
+  parameter = factor(x = c("calcification"), 
+                     levels = c("calcification")),
+  value = c(200),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.031, r = -0.2275", 
+            "p = 0.0151, r = -0.2584"))
+
+
+CALC <- calc_cor + geom_text(data = annotation_calc_cor,
+                             mapping = aes(x = conc, y = value,
+                                           label = label),
+                             color = "black",
+                             size = 3)
+CALC
+
+
 # create summary table with relative necrosis after 12 weeks
 necrosis_all <-  necrosis_per %>%
   # select only the last timepoint
@@ -516,9 +600,113 @@ necrosis_all <-  necrosis_per %>%
   rename(value = necro_per) %>% 
   mutate(parameter = "necrosis",
          conc = as.numeric(conc)) 
+
 necrosis_all <- necrosis_all %>%
   # remove unnecessary colums
   dplyr::select(-necro_occured, -treatment, -col, -tank, -tp, -treat)
+
+# write it into .csv
+write_csv2(necrosis_all, "processed/necrosis_all.csv")
+
+
+necro_cor <- ggplot(necrosis_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = expression(paste("Necrosis (%) "))) +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_necro_cor <- data.frame(
+  parameter = factor(x = c("necrosis"), 
+                     levels = c("necrosis")),
+  value = c(50),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.656, r = -0.1614",
+            "p = 0.6963, r = 0.1022"))
+
+NECRO <- necro_cor + geom_text(data = annotation_necro_cor,
+                             mapping = aes(x = conc, y = value,
+                                           label = label),
+                             color = "black",
+                             size = 3)
+NECRO
+
+
+# create summary table with mean polyp acrtivity over time of exposure
+polypactivity_all <-  Polyps %>%
+  # select only the last timepoint
+  filter(tp!="0") %>%
+  # separate by species and concentration
+  group_by(ID, spec, conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(value = mean(ranks))%>% 
+  mutate(parameter = "polypactivity",
+         conc = as.numeric(conc)) 
+
+# write it into .csv
+write_csv2(polypactivity_all, "processed/polypactivity_all.csv")
+
+poly_cor <- ggplot(polypactivity_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Polypactivity (mean)") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_poly_cor <- data.frame(
+  parameter = factor(x = c("polypactivity"), 
+                     levels = c("polypactivity")),
+  value = c(1.1),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = <0.0001, r = -0.5625", 
+            "p = 0.0025, r = -0.3146"))
+
+POLY <- poly_cor + geom_text(data = annotation_poly_cor,
+                           mapping = aes(x = conc, y = value,
+                                         label = label),
+                           color = "black",
+                           size = 3)
+
+POLY
+
 
 # create summary table with relative YII after 12 weeks
 YII_all <-  YII_relative %>%
@@ -533,6 +721,50 @@ YII_all <-  YII_relative %>%
   #keep only relevant columns
   dplyr::select(ID, spec, conc, value, parameter)
 
+# write it into .csv
+write_csv2(YII_all, "processed/YII_all.csv")
+
+YII_cor <- ggplot(YII_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Relative Y(II)") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_YII_cor <- data.frame(
+  parameter = factor(x = c("YII"), 
+                     levels = c("YII")),
+  value = c(125),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.0347, r = 0.2229", 
+            "p = 0.2962, r = 0.1113"))
+
+YII_cor_plot <- YII_cor + geom_text(data = annotation_YII_cor,
+                               mapping = aes(x = conc, y = value,
+                                             label = label),
+                               color = "black",
+                               size = 3)
+YII_cor_plot
+
+
 # create summary table with relative FvFm after 12 weeks
 FvFm_all <-  FvFm_relative %>%
   # select only the last timepoint
@@ -545,6 +777,50 @@ FvFm_all <-  FvFm_relative %>%
   mutate(parameter = "FvFm")   %>% 
   #keep only relevant columns
   dplyr::select(ID, spec, conc, value, parameter)
+
+# write it into .csv
+write_csv2(FvFm_all, "processed/FvFm_all.csv")
+
+FvFm_cor <- ggplot(FvFm_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Relative FvFm") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_FvFm_cor <- data.frame(
+  parameter = factor(x = c("FvFm"), 
+                     levels = c("FvFm")),
+  value = c(350),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.0105, r = 0.2685", 
+            "p = 0.0823, r = -0.1818"))
+
+FvFm_cor_plot <- FvFm_cor + geom_text(data = annotation_FvFm_cor,
+                                    mapping = aes(x = conc, y = value,
+                                                  label = label),
+                                    color = "black",
+                                    size = 3)
+FvFm_cor_plot
+
 
 # create summary table with rETR after 12 weeks
 rETR_all <-  rETR_i %>%
@@ -559,19 +835,48 @@ rETR_all <-  rETR_i %>%
   #keep only relevant columns
   dplyr::select(ID, spec, conc, value, parameter)
 
+# write it into .csv
+write_csv2(rETR_all, "processed/rETR_all.csv")
 
-# create summary table with alpha after 12 weeks
-alpha_all <-  rETR_i %>%
-  # select only the last timepoint
-  filter(tp=="3") %>%
-  # ignore NAs
-  na.omit() %>%
-  #rename column enrty
-  rename(value = alpha) %>% 
-  # use mean
-  mutate(parameter = "alpha")   %>% 
-  #keep only relevant columns
-  dplyr::select(ID, spec, conc, value, parameter)
+rETR_cor <- ggplot(rETR_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "rETRmax") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_rETR_cor <- data.frame(
+  parameter = factor(x = c("rETRmax"), 
+                     levels = c("rETRmax")),
+  value = c(300),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.8817, r = -0.0159",
+            "p = 0.7789, r = -0.03"))
+
+rETR_cor_plot <- rETR_cor + geom_text(data = annotation_rETR_cor,
+                                    mapping = aes(x = conc, y = value,
+                                                  label = label),
+                                    color = "black",
+                                    size = 3)
+rETR_cor_plot
 
 
 # create summary table with Ek after 12 weeks
@@ -587,117 +892,121 @@ Ek_all <-  rETR_i %>%
   #keep only relevant columns
   dplyr::select(ID, spec, conc, value, parameter)
 
-# create summary table with mean polyp acrtivity over time of exposure
-polypactivity_all <-  Polyps %>%
-  # select only the last timepoint
-  filter(tp!="0") %>%
-  # separate by species and concentration
-  group_by(ID, spec, conc) %>%
-  # ignore NAs
-  na.omit() %>%
-  # use mean
-  summarise(value = mean(ranks))%>% 
-  mutate(parameter = "polypactivity",
-         conc = as.numeric(conc)) 
+# write it into .csv
+write_csv2(Ek_all, "processed/Ek_all.csv")
 
-# bring all tables together
-all_data <- rbind(surface_all, volume_all, calcification_all, necrosis_all,
-                  polypactivity_all,
-                  YII_all, FvFm_all, 
-                  rETR_all, alpha_all, Ek_all)
-
-all_data$parameter <- factor(all_data$parameter, 
-                             levels = c("surface", "volume", "calcification", "necrosis", "polypactivity",
-                                        "YII", "FvFm", "rETRmax", "Ek", "alpha"))
-
-
-ggplot(all_data, aes(conc, value)) +
+Ek_cor <- ggplot(Ek_all, aes(conc, value, color = as.factor(conc))) +
   facet_grid(parameter~spec, scales="free", 
              labeller = labeller(spec = spec_labs)) +
   geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
   stat_poly_line(color = "black") +
-  #scale_color_continuous(treat = color_scheme) +
   scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
-  scale_y_continuous(trans='log10')+
-  stat_correlation(p.digits = 4,
-                   aes(label = paste(after_stat(r.label),
-                                     after_stat(p.value.label),
-                                     sep = "*\"; \"*")),
-                   method = "pearson", conf.level = 0.95) +
+  scale_y_continuous(trans='log10') +
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
-       y = "Value") +
-  # stat_correlation(use_label(c("R", "P")))+
+       y = "Ek") +
   theme_bw()+
-  theme(#legend.position= "none", #c(0.1, 0.9),
-    #legend.direction = "horizontal",
-    # legend.text = element_text(size = 10),
+  theme(
     panel.grid.major = element_blank(), 
     panel.grid.minor = element_blank(),
     strip.background = element_blank(),
     panel.background = element_rect(colour = "black"),
-    strip.text.x = element_text(face = "italic", size = 12),
-    strip.text.y = element_text(size = 10),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.text.x = element_blank(),
+    legend.position = "none")
+
+annotation_Ek_cor <- data.frame(
+  parameter = factor(x = c("Ek"), 
+                     levels = c("Ek")),
+  value = c(550),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.7571, r = -0.0331", 
+            "p = 0.9468, r = -0.0071"))
+
+Ek_cor_plot <- Ek_cor + geom_text(data = annotation_Ek_cor,
+                                    mapping = aes(x = conc, y = value,
+                                                  label = label),
+                                    color = "black",
+                                    size = 3)
+Ek_cor_plot
+
+
+# create summary table with alpha after 12 weeks
+alpha_all <-  rETR_i %>%
+  # select only the last timepoint
+  filter(tp=="3") %>%
+  # ignore NAs
+  na.omit() %>%
+  #rename column enrty
+  rename(value = alpha) %>% 
+  # use mean
+  mutate(parameter = "alpha")   %>% 
+  #keep only relevant columns
+  dplyr::select(ID, spec, conc, value, parameter)
+
+# write it into .csv
+write_csv2(alpha_all, "processed/alpha_all.csv")
+
+alpha_cor <- ggplot(alpha_all, aes(conc, value, color = as.factor(conc))) +
+  facet_grid(parameter~spec, scales="free", 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Alpha") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
     axis.title.x = element_text(size = 12),
-    axis.title.y = element_text(size = 12))
+    axis.title.y = element_text(size = 10),
+    legend.position = "none")
+
+annotation_alpha_cor <- data.frame(
+  parameter = factor(x = c("alpha"), 
+                     levels = c("alpha")),
+  value = c(0.725),
+  conc = c(15),
+  spec = c("Pve", "Spi"),
+  label = c("p = 0.6022, r = 0.0557", 
+            "p = 0.6044, r = -0.0553"))
+
+ALPHA <- alpha_cor + geom_text(data = annotation_alpha_cor,
+                           mapping = aes(x = conc, y = value,
+                                         label = label),
+                           color = "black",
+                           size = 3)
+
+ALPHA
+
+
+Correlation <- # bring all growth plots together
+  SURF / VOL / CALC / NECRO / POLY / YII_cor_plot / FvFm_cor_plot / rETR_cor_plot / Ek_cor_plot / ALPHA
+
+Correlation
 
 
 # safe graph
-ggsave("out/correlations_log.png", plot = last_plot(),
-       scale = 1, width = 18, height = 24, units = c("cm"),
+ggsave("out/Correlation.png", plot = Correlation,
+       scale = 1, width = 24, height = 42, units = c("cm"),
        dpi = 600, limitsize = TRUE)  
 
 
 
 # ----- 5. Supplements  --------------------------------------------------------
-## ---- 5.1. Advanced Hearmap --------------------------------------------------
-# Statistics for supplement table
-# Surface Pve
-surface_Pve <- subset(surface_all, spec == "Pve")
-cor.test(surface_Pve$value, surface_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve$value and surface_Pve$conc
-# t = -3.2999, df = 88, p-value = 0.001398
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#  -0.5042723 -0.1339487
-# sample estimates:
-#  cor 
-# -0.3318348 
-
-# Surface Spi
-surface_Spi <- subset(surface_all, spec == "Spi")
-cor.test(surface_Spi$value, surface_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve$value and surface_Pve$conc
-# t = -3.2999, df = 88, p-value = 0.001398
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#  -0.5042723 -0.1339487
-# sample estimates:
-#  cor 
-# -0.3318348 
-
-
-
-
-
-
-# CONTINUE HERE ---------------------
-# standardize each fragment to it's mean value at t0
-FvFm_0 <- subset(FvFm, tp== "0") %>% 
-  # remove unnecessary columns for clear merge
-  dplyr::select(ID, Fv_Fm) %>% 
-  rename(FvFm_t0 = Fv_Fm) 
-
-FvFm_relative <- subset(FvFm, tp!= "0")
-
-FvFm_relative <- full_join(FvFm_relative, FvFm_0, by="ID")
-
-FvFm_relative <- FvFm_relative %>% 
-  mutate(relativeFvFm = 100/FvFm_t0*Fv_Fm) 
-#-------------------------------------
-
-
 ## ---- 5.1. MP concentrations -------------------------------------------------
 Conc_curve <- ggplot(Concentrations, aes(x = days, y = per_L)) +
   geom_smooth(aes(x = days, y = per_L, group = conc, color = conc, fill = conc)) + 
