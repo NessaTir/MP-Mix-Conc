@@ -98,7 +98,8 @@ Polyps <- read_rds("processed/polyp_activity.rds")
 # MP Concentration measurements
 Concentrations <- read_csv2("in/Concentration_newformat.csv") %>%
   mutate(per_L = ((count/volume)*1000),
-         tank = as.character(tank))
+         tank = as.character(tank),
+         conc = as.numeric(conc))
 
 # MP Size measurements
 # MP_size <- read_csv2("in/MP_sizes.csv")
@@ -1027,13 +1028,76 @@ Conc_curve <- ggplot(Concentrations, aes(x = days, y = per_L)) +
         legend.text = element_text(size = 10),
         legend.position = "top")
 
+Conc_curve
 
 # safe graph
 ggsave("out/Concentrations.png", plot = Conc_curve,
        scale = 1, width = 16, height = 18, units = c("cm"),
        dpi = 600, limitsize = TRUE)
 
+# display relationship between added mg/L and measured ppl
+Conc <- ggplot(Concentrations, aes(conc, per_L, color = as.factor(conc))) +
+#  facet_grid(parameter~spec, scales="free", 
+ #            labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = expression(paste("Particles ","·", L^-1))) +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_text(size = 10),
+    axis.title.y = element_text(size = 10),
+    legend.position = "none")
 
+cor.test(Concentrations$per_L, Concentrations$conc,  conf.level = 0.95, method = "pearson")
+# OUTPUT: Pearson's product-moment correlation
+# data:  test$value_log and test$conc
+# t = 29.72, df = 7018, p-value < 2.2e-16
+# alternative hypothesis: true correlation is not equal to 0
+# 95 percent confidence interval:
+#   0.3134020 0.3549612
+# sample estimates:
+#   cor 
+# 0.3343441 
+# --> linear correlation
+
+# Exponential
+ks.test(Concentrations$per_L, Concentrations$conc, y = "pexp")
+# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
+# data:  Concentrations$per_L
+# D = 0.96923, p-value < 2.2e-16
+# alternative hypothesis: two-sided
+
+annotation_conc <- data.frame(
+  parameter = factor(x = c("conc"), 
+                     levels = c("conc")),
+  per_L = c(10000),
+  conc = c(15),
+  # spec = c("Pve", "Spi"),
+  label = c("p < 0.0001, r = 0.3343"))
+
+Conc_graph <- Conc + geom_text(data = annotation_conc,
+                               mapping = aes(x = conc, y = per_L,
+                                             label = label),
+                               color = "black",
+                               size = 3)
+
+Conc_graph
+
+# safe graph
+ggsave("out/Concentrations_cor.png", plot = Conc_graph,
+       scale = 1, width = 16, height = 18, units = c("cm"),
+       dpi = 600, limitsize = TRUE)
 
 ## ---- 5.1.1. Table of MP concentrations --------------------------------------
 # get mean and sd of Concentrations
