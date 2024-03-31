@@ -162,7 +162,11 @@ surface_plot <- surface %>%
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
         legend.text = element_text(size = 12),
-        legend.position = "top")
+        legend.position = "top",
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             b = 2,  # Bottom margin
+                             l = 2)) # Left margin))
 
 # show plot
 surface_plot
@@ -202,7 +206,11 @@ volume_plot <- volume %>%
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
-        legend.position = "none")
+        legend.position = "none",
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             b = 2,  # Bottom margin
+                             l = 2)) # Left margin))
 
 # show plot
 volume_plot
@@ -234,18 +242,21 @@ weight_plot <- calcification %>%
   labs(color = "Treatment [mg/l]", fill = "Treatment [mg/l]") +
   ylab(expression(atop(Cumulative~calcification, rate~(mg~cm^-2)))) +
   #ylab("Cumulative calcification [mg/cm²]") +
-  xlab("Weeks") +
+  xlab("Weeks of exposure") +
   # design theme
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
         strip.text.x = element_blank(), # remove species labels
         axis.text.x = element_text(size = 10),
-        axis.title.x = element_blank(),
+        axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
-        legend.position = "none") # remove legend
-
+        legend.position = "none", # remove legend
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             b = 2,  # Bottom margin
+                             l = 2)) # Left margin))
 # show plot
 weight_plot
 
@@ -288,7 +299,11 @@ necro_plot <- necrosis %>%
         axis.text.y = element_text(size = 10),
         legend.text = element_text(size = 10),
         legend.title = element_blank(),
-        legend.position = "top")
+        legend.position = "top",
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             b = 2,  # Bottom margin
+                             l = 2)) # Left margin))
 
 # show plot
 necro_plot
@@ -299,15 +314,16 @@ necro_plot
 growth_plot <- surface_plot / volume_plot / weight_plot / necro_plot
 
 # safe all growth plots as one
-ggsave("out/growth.png", plot = growth_plot,
-       scale = 1, width = 18, height = 26, units = c("cm"),
-       dpi = 600, limitsize = TRUE)  
+# ggsave("out/growth.png", plot = growth_plot,
+#       scale = 1, width = 18, height = 26, units = c("cm"),
+#       dpi = 600, limitsize = TRUE)  
+
 
 
 
 ## ---- 4.3. Polyp activity ----------------------------------------------------
 polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
-  facet_grid(rows = vars(spec), 
+  facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
   scale_x_continuous(labels= c("0", "4", "8", "12")) +
@@ -317,29 +333,47 @@ polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
                     labels = treat_labs) +
   ylab("Mean polyp activity") + 
   xlab("Weeks of exposure") +
-  labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
+  labs(color = expression(paste("Treatment ", mg, "·", L^-1)), 
+       fill = expression(paste("Treatment ", mg, "·", L^-1))) +
   # design theme
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
-        strip.text.y = element_text(face = "italic", size = 12),
+        strip.text.y = element_blank(),
+        strip.text.x = element_blank(), # remove species labels
         axis.text.x = element_text(size = 10),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
         legend.text = element_text(size = 10),
-        legend.position = "top")
+        legend.position = "top",
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             l = 2,  # Left margin
+                             b = 2)) # Bottom margin)
 
 
 # show plot
 polyps
 
 # save plot
-ggsave("out/polyps.png", plot = polyps,
-       scale = 1, width = 12, height = 20, units = c("cm"),
-       dpi = 600, limitsize = TRUE)  
+# ggsave("out/polyps.png", plot = polyps,
+#        scale = 1, width = 18, height = 6, units = c("cm"),
+#        dpi = 600, limitsize = TRUE)  
 
+QI_I <- surface_plot / volume_plot / weight_plot
+# save plot
+ggsave("out/QI_I.png", plot = QI_I,
+       scale = 1, width = 16, height = 20, units = c("cm"),
+       dpi = 600, limitsize = TRUE) 
 
+QI_II <- necro_plot / polyps
+# save plot
+ggsave("out/QI_II.png", plot = QI_II,
+       scale = 1, width = 16, height = 20, units = c("cm"),
+       dpi = 600, limitsize = TRUE) 
+
+ 
 
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
 ### --- 4.4.1. Effective quantum yield -----------------------------------------
@@ -959,6 +993,30 @@ alpha_cor <- ggplot(alpha_all, aes(conc, value, color = as.factor(conc))) +
   geom_point() +
   scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
                      values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  # stat_poly_line(color = "black") +
+  scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
+  scale_y_continuous(trans='log10') +
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Alpha") +
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background = element_rect(colour = "black"),
+    strip.text.x = element_blank(),
+    strip.text.y = element_blank(),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 10),
+    legend.position = "none")
+
+ggplot(alpha_all, aes(x = conc, y = value)) +
+  facet_grid(~ spec, 
+             labeller = labeller(spec = spec_labs)) +
+  geom_point() +
+  scale_color_manual(breaks = c("0", "0.1", "1", "10", "100"),
+                     values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
+  geom_smooth(aes(x = conc, y = value)) +
   stat_poly_line(color = "black") +
   scale_x_continuous(trans='log', labels= c("0", "0.1", "1", "10", "100"), breaks = c(0, 0.1, 1, 10, 100)) +
   scale_y_continuous(trans='log10') +
@@ -976,6 +1034,7 @@ alpha_cor <- ggplot(alpha_all, aes(conc, value, color = as.factor(conc))) +
     axis.title.y = element_text(size = 10),
     legend.position = "none")
 
+
 annotation_alpha_cor <- data.frame(
   parameter = factor(x = c("alpha"), 
                      levels = c("alpha")),
@@ -992,6 +1051,9 @@ ALPHA <- alpha_cor + geom_text(data = annotation_alpha_cor,
                            size = 3)
 
 ALPHA
+
+
+
 
 
 Correlation <- # bring all growth plots together
