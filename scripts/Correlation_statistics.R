@@ -1547,6 +1547,7 @@ summary(model)
 # F-statistic: 0.4122 on 1 and 70 DF,  p-value: 0.523
 
 
+## ---- 5.05. Polypactivity ----------------------------------------------------
 # polypactivity Pve
 polypactivity_Pve <- subset(polypactivity, spec == "Pve")
 
@@ -1591,18 +1592,29 @@ ks.test(polypactivity_Spi$value, polypactivity_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(polypactivity_Spi$value, polypactivity_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  polypactivity_Spi$value and polypactivity_Spi$conc
-# S = 149155, p-value = 0.03085
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.2277612 
-# correlation
+# Logarithmic
+plot(polypactivity_Spi$conc, polypactivity_Spi$value)
+#fit the model
+model <- lm(polypactivity_Spi_wocon$value ~ log(polypactivity_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = polypactivity_Spi_wocon$value ~ log(polypactivity_Spi_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.40710 -0.19506 -0.01327  0.15833  0.48179 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                        0.61944    0.02953  20.977   <2e-16 ***
+#   log(polypactivity_Spi_wocon$conc) -0.02198    0.01047  -2.099   0.0394 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2287 on 70 degrees of freedom
+# Multiple R-squared:  0.05923,	Adjusted R-squared:  0.04579 
+# F-statistic: 4.407 on 1 and 70 DF,  p-value: 0.03939
 
 
+## ---- 5.06. YII --------------------------------------------------------------
 # YII Pve
 YII_Pve <- subset(YII_all, spec == "Pve")
 
@@ -1614,16 +1626,26 @@ ks.test(YII_Pve$value, YII_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(YII_Pve$value, YII_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  YII_Pve$value and YII_Pve$conc
-# S = 78572, p-value = 0.0006377
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# 0.3532365 
-# correlation
+# Logarithmic
+plot(YII_Pve$conc, YII_Pve$value)
+#fit the model
+model <- lm(YII_Pve_wocon$value ~ log(YII_Pve_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = YII_Pve_wocon$value ~ log(YII_Pve_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -13.9522  -2.8509   0.1149   2.1959  19.7962 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)             102.1607     0.7322 139.520  < 2e-16 ***
+#   log(YII_Pve_wocon$conc)   0.8873     0.2596   3.417  0.00106 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 5.672 on 70 degrees of freedom
+# Multiple R-squared:  0.143,	Adjusted R-squared:  0.1307 
+# F-statistic: 11.68 on 1 and 70 DF,  p-value: 0.001057
 
 
 # YII Spi
@@ -1637,19 +1659,29 @@ ks.test(YII_Spi$value, YII_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(YII_Spi$value, YII_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YIISpearman's rank correlation rho
-# data:  YII_Spi$value and YII_Spi$conc
-# S = 96979, p-value = 0.05657
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# 0.2017207 
-# no correlation
+# Logarithmic
+plot(YII_Spi$conc, YII_Spi$value)
+#fit the model
+model <- lm(YII_Spi_wocon$value ~ log(YII_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = YII_Spi_wocon$value ~ log(YII_Spi_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -15.4772  -4.2948  -0.3825   3.6747  22.4974 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)             103.8810     0.9690 107.199   <2e-16 ***
+#   log(YII_Spi_wocon$conc)   0.6787     0.3436   1.975   0.0522 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 7.506 on 70 degrees of freedom
+# Multiple R-squared:  0.05279,	Adjusted R-squared:  0.03926 
+# F-statistic: 3.901 on 1 and 70 DF,  p-value: 0.0522
 
 
+## ---- 5.07. FvFm -------------------------------------------------------------
 # FvFm Pve
 FvFm_Pve <- subset(FvFm_all, spec == "Pve")
 
@@ -1661,16 +1693,26 @@ ks.test(FvFm_Pve$value, FvFm_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(FvFm_Pve$value, FvFm_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: Spearman's rank correlation rho
-# data:  FvFm_Pve$value and FvFm_Pve$conc
-# S = 98045, p-value = 0.06845
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# 0.192947 
-# no correlation
+# Logarithmic
+plot(FvFm_Pve$conc, FvFm_Pve$value)
+#fit the model
+model <- lm(FvFm_Pve_wocon$value ~ log(FvFm_Pve_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = FvFm_Pve_wocon$value ~ log(FvFm_Pve_wocon$conc))
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -73.03 -37.03 -12.33  14.81 251.35 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)               109.187      6.884  15.860   <2e-16 ***
+#   log(FvFm_Pve_wocon$conc)    3.538      2.441   1.449    0.152    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 53.33 on 70 degrees of freedom
+# Multiple R-squared:  0.02913,	Adjusted R-squared:  0.01526 
+# F-statistic:   2.1 on 1 and 70 DF,  p-value: 0.1517
 
 
 # FvFm Spi
@@ -1684,18 +1726,30 @@ ks.test(FvFm_Spi$value, FvFm_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(FvFm_Spi$value, FvFm_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  FvFm_Spi$value and FvFm_Spi$conc
-# S = 127106, p-value = 0.665
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.046271 
-# no correlation
+# Logarithmic
+plot(FvFm_Spi$conc, FvFm_Spi$value)
+#fit the model 
+model <- lm(FvFm_Spi_wocon$value ~ log(FvFm_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = FvFm_Spi_wocon$value ~ log(FvFm_Spi_wocon$conc))
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -76.59 -33.82 -10.21  25.66 282.14 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)               121.725      6.847  17.779   <2e-16 ***
+#   log(FvFm_Spi_wocon$conc)   -3.924      2.428  -1.616    0.111    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 53.03 on 70 degrees of freedom
+# Multiple R-squared:  0.03598,	Adjusted R-squared:  0.02221 
+# F-statistic: 2.613 on 1 and 70 DF,  p-value: 0.1105
 
 
+
+## ---- 5.08. rETRmax ----------------------------------------------------------
 # rETRmax Pve
 rETR_Pve <- subset(rETR_all, spec == "Pve")
 
@@ -1707,16 +1761,26 @@ ks.test(rETR_Pve$value, rETR_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(rETR_Pve$value, rETR_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  rETR_Pve$value and rETR_Pve$conc
-# S = 127731, p-value = 0.6303
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.05141222 
-# no correlation
+# Logarithmic
+plot(rETR_Pve$conc, rETR_Pve$value)
+#fit the model
+model <- lm(rETR_Pve_wocon$value ~ log(rETR_Pve_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = rETR_Pve_wocon$value ~ log(rETR_Pve_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -106.379  -33.431    2.466   30.469  110.385 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)              175.0712     6.4759  27.034   <2e-16 ***
+#   log(rETR_Pve_wocon$conc)   0.5778     2.2964   0.252    0.802    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 50.16 on 70 degrees of freedom
+# Multiple R-squared:  0.0009035,	Adjusted R-squared:  -0.01337 
+# F-statistic: 0.06331 on 1 and 70 DF,  p-value: 0.8021
 
 
 # rETRmax Spi
@@ -1730,18 +1794,29 @@ ks.test(rETR_Spi$value, rETR_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(rETR_Spi$value, rETR_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  rETR_Spi$value and rETR_Spi$conc
-# S = 127033, p-value = 0.6691
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.04566615 
-# no correlation
+# Logarithmic
+plot(rETR_Spi$conc, rETR_Spi$value)
+#fit the model
+model <- lm(rETR_Spi_wocon$value ~ log(rETR_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = rETR_Spi_wocon$value ~ log(rETR_Spi_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -121.701  -28.846   -6.634   34.754  104.452 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)               139.239      6.198  22.467   <2e-16 ***
+#   log(rETR_Spi_wocon$conc)    1.016      2.198   0.462    0.645    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 48.01 on 70 degrees of freedom
+# Multiple R-squared:  0.003046,	Adjusted R-squared:  -0.0112 
+# F-statistic: 0.2138 on 1 and 70 DF,  p-value: 0.6452
 
 
+## ---- 5.09. Ek ---------------------------------------------------------------
 # Ek Pve
 Ek_Pve <- subset(Ek_all, spec == "Pve")
 
@@ -1753,16 +1828,26 @@ ks.test(Ek_Pve$value, Ek_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(Ek_Pve$value, Ek_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  Ek_Pve$value and Ek_Pve$conc
-# S = 127584, p-value = 0.6384
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.05020252 
-# no correlation
+# Logarithmic
+plot(Ek_Pve$conc, Ek_Pve$value)
+#fit the model
+model <- lm(Ek_Pve_wocon$value ~ log(Ek_Pve_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = Ek_Pve_wocon$value ~ log(Ek_Pve_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -181.308  -54.581   -0.762   63.331  239.949 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)            311.3399    11.9502  26.053   <2e-16 ***
+#   log(Ek_Pve_wocon$conc)   0.3295     4.2376   0.078    0.938    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 92.57 on 70 degrees of freedom
+# Multiple R-squared:  8.635e-05,	Adjusted R-squared:  -0.0142 
+# F-statistic: 0.006045 on 1 and 70 DF,  p-value: 0.9382
 
 
 # Ek Spi
@@ -1776,18 +1861,29 @@ ks.test(Ek_Spi$value, Ek_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(Ek_Spi$value, Ek_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  Ek_Spi$value and Ek_Spi$conc
-# S = 132764, p-value = 0.3841
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.09284442 
-# no correlation
+# Logarithmic
+plot(Ek_Spi$conc, Ek_Spi$value)
+#fit the model
+model <- lm(Ek_Spi_wocon$value ~ log(Ek_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = Ek_Spi_wocon$value ~ log(Ek_Spi_wocon$conc))
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -180.234  -54.928   -9.418   45.653  170.911 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)             268.314      9.841  27.266   <2e-16 ***
+#   log(Ek_Spi_wocon$conc)    1.761      3.490   0.505    0.615    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 76.23 on 70 degrees of freedom
+# Multiple R-squared:  0.003624,	Adjusted R-squared:  -0.01061 
+# F-statistic: 0.2546 on 1 and 70 DF,  p-value: 0.6154
 
 
+## ---- 5.10. Alpha ------------------------------------------------------------
 # alpha Pve
 alpha_Pve <- subset(alpha_all, spec == "Pve")
 
@@ -1799,16 +1895,26 @@ ks.test(alpha_Pve$value, alpha_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(alpha_Pve$value, alpha_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  alpha_Pve$value and alpha_Pve$conc
-# S = 119281, p-value = 0.8652
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# 0.01814549
-# no correlation
+# Logarithmic
+plot(alpha_Pve$conc, alpha_Pve$value)
+#fit the model
+model <- lm(alpha_Pve_wocon$value ~ log(alpha_Pve_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = alpha_Pve_wocon$value ~ log(alpha_Pve_wocon$conc))
+# Residuals:
+#   Min        1Q    Median        3Q       Max 
+# -0.138607 -0.033285  0.006113  0.035589  0.128022 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)               0.565059   0.006600  85.620   <2e-16 ***
+#   log(alpha_Pve_wocon$conc) 0.001465   0.002340   0.626    0.533    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.05112 on 70 degrees of freedom
+# Multiple R-squared:  0.005569,	Adjusted R-squared:  -0.008638 
+# F-statistic: 0.392 on 1 and 70 DF,  p-value: 0.5333
 
 
 # alpha Spi
@@ -1822,13 +1928,23 @@ ks.test(alpha_Spi$value, alpha_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no correlation
 
-# In general?
-cor.test(alpha_Spi$value, alpha_Spi$conc, method = "spearman", exact = FALSE)
-# OUTPUT: 	Spearman's rank correlation rho
-# data:  alpha_Spi$value and alpha_Spi$conc
-# S = 124902, p-value = 0.7924
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.02812551 
-# no correlation
+# Logarithmic
+plot(alpha_Spi$conc, alpha_Spi$value)
+#fit the model
+model <- lm(alpha_Spi_wocon$value ~ log(alpha_Spi_wocon$conc))
+#view the output of the model
+summary(model)
+# OUTPUT: Call:
+# lm(formula = alpha_Spi_wocon$value ~ log(alpha_Spi_wocon$conc))
+# Residuals:
+#   Min        1Q    Median        3Q       Max 
+# -0.282665 -0.046321  0.000879  0.057081  0.140588 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)               0.5117148  0.0106483  48.056   <2e-16 ***
+#   log(alpha_Spi_wocon$conc) 0.0004212  0.0037759   0.112    0.911    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.08248 on 70 degrees of freedom
+# Multiple R-squared:  0.0001777,	Adjusted R-squared:  -0.01411 
+# F-statistic: 0.01244 on 1 and 70 DF,  p-value: 0.9115
