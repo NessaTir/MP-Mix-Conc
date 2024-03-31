@@ -1347,16 +1347,6 @@ ks.test(volume_Pve$value, volume_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no exp correlation
 
-# In general?
-cor.test(surface_Pve$value, surface_Pve$conc, method = "spearman", exact = FALSE)
-# OUTPUT: Spearman's rank correlation rho
-# data:  surface_Pve$value and surface_Pve$conc
-# S = 151098, p-value = 0.0206
-# alternative hypothesis: true rho is not equal to 0
-# sample estimates:
-#   rho 
-# -0.2437544 
-# correlation
 
 # Logarithmic
 plot(volume_Pve$conc, volume_Pve$value)
