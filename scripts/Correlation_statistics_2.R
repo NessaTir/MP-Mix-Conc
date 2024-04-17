@@ -21,6 +21,9 @@ library(ggpubr)
 # for GAM
 library(mgcv)
 
+# using AIC to find the best fitted test
+library(AICcmodavg)
+
 
 # ----- 3. Read in needed data files ------------------------------------------- 
 ## ---- 3.01. Surface ----------------------------------------------------------
@@ -54,75 +57,138 @@ Ek <- read.csv2("processed/Ek_all.csv")
 alpha <- read.csv2("processed/alpha_all.csv")
 
 
-# ----- 4. Linear Relationship -------------------------------------------------
-install.packages("AICcmodavg")
-library(AICcmodavg)
+# ----- 4. Looking for Relationships -------------------------------------------
 ## ---- 4.01. Surface ----------------------------------------------------------
+### --- 4.01.1. Pve ------------------------------------------------------------
 # Surface Pve
 surface_Pve <- subset(surface, spec == "Pve") %>%
   mutate(value_log = log(value),
          conc_log = log(conc))
 
 # untransformed
-Surf_Pve1 <- cor.test(surface_Pve$value, surface_Pve$conc, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve$value_log and surface_Pve$conc
-# t = -3.2999, df = 88, p-value = 0.001398
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#  -0.5042723 -0.1339487
-# sample estimates:
-#  cor 
-# -0.3318348 
+Surf_Pve1 <- lm((value) ~ (conc), data = surface_Pve)
+#view the output of the model
+summary(Surf_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = surface_Pve)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -54.244 -14.692  -2.047  10.365  60.831 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 35.50787    2.57335    13.8   <2e-16 ***
+#   conc        -0.18893    0.05725    -3.3   0.0014 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 21.22 on 88 degrees of freedom
+# Multiple R-squared:  0.1101,	Adjusted R-squared:    0.1 
+# F-statistic: 10.89 on 1 and 88 DF,  p-value: 0.001398 
 
 # log-log transformed
 # exclude conc 0 mg/l, as log(0) not possible
 surface_Pve_wocon <- surface_Pve %>%
-  subset(conc != "0")
-Surf_Pve2 <-cor.test(surface_Pve_wocon$value_log, surface_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve_wocon$value_log and surface_Pve_wocon$conc_log
-# t = -2.5401, df = 67, p-value = 0.01341
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.49811574 -0.06419875
-# sample estimates:
-#   cor 
-# -0.2963761 
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Surf_Pve2 <- glm(value_log ~ conc_log,
+                data = surface_Pve_wocon)
+#view the output of the model
+summary(Surf_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = surface_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.95766 -0.40452  0.03255  0.47638  1.20794 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  3.35797    0.08801   38.15   <2e-16 ***
+#   log(conc)   -0.08105    0.03191   -2.54   0.0134 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.6777 on 67 degrees of freedom
+# (3 observations deleted due to missingness)
+# Multiple R-squared:  0.08784,	Adjusted R-squared:  0.07422 
+# F-statistic: 6.452 on 1 and 67 DF,  p-value: 0.01341 
 
 # log-log transformed - early linearity
 surface_Pve_wocon100 <- surface_Pve_wocon %>%
-  subset(conc != "100")
-Surf_Pve3 <-cor.test(surface_Pve_wocon100$value_log, surface_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve_wocon100$value_log and surface_Pve_wocon100$conc_log
-# t = 0.1374, df = 51, p-value = 0.8913
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2523701  0.2880321
-# sample estimates:
-#   cor 
-# 0.01923585 
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Surf_Pve3 <- glm(value_log ~ conc_log, data = surface_Pve_wocon100)
+#view the output of the model
+summary(Surf_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = surface_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -2.0273 -0.3533  0.1084  0.3741  1.1383 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 3.427629   0.087607  39.125   <2e-16 ***
+#   log(conc)   0.006433   0.046820   0.137    0.891    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.6376 on 51 degrees of freedom
+# (1 observation deleted due to missingness)
+# Multiple R-squared:  0.00037,	Adjusted R-squared:  -0.01923 
+# F-statistic: 0.01888 on 1 and 51 DF,  p-value: 0.8913
+
+Surf_Pve2 <- Surf_Pve2[-c(9)]
+!Surf_Pve2$na.action
 
 # log-log transformed - late linearity
 surface_Pve_wocon01 <- surface_Pve_wocon %>%
   subset(conc != "0.1")
-Surf_Pve4 <-cor.test(surface_Pve_wocon01$value_log, surface_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Pve_wocon01$value_log and surface_Pve_wocon01$conc_log
-# t = -2.021, df = 49, p-value = 0.04876
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.513699556 -0.001949801
-# sample estimates:
-#   cor 
-# -0.2773844
+Surf_Pve4 <- glm(log(value) ~ log(conc), data = surface_Pve_wocon01)
+#view the output of the model
+summary(Surf_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = surface_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -2.0450 -0.4402  0.0411  0.5478  1.1242 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  3.44529    0.15827  21.768   <2e-16 ***
+#   log(conc)   -0.11023    0.05454  -2.021   0.0488 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.7314 on 49 degrees of freedom
+# (3 observations deleted due to missingness)
+# Multiple R-squared:  0.07694,	Adjusted R-squared:  0.0581 
+# F-statistic: 4.084 on 1 and 49 DF,  p-value: 0.04876
 
-models <- list(Surf_Pve1, Surf_Pve2, Surf_Pve3, Surf_Pve4)
+# Logarithmic
+plot(surface_Pve$conc, surface_Pve$value)
+#fit the model
+Surf_Pve5 <- glm(value ~ log(conc), data = surface_Pve_wocon)
+#view the output of the model
+summary(Surf_Pve5)
+# OUTPUT: Call:
+# lm(formula = surface_Pve_wocon$value ~ log(surface_Pve_wocon$conc))
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -44.915 -11.806  -3.226  11.903  62.605 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                  33.5447     2.6524  12.647  < 2e-16 ***
+#   log(surface_Pve_wocon$conc)  -2.5386     0.9406  -2.699  0.00871 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 20.55 on 70 degrees of freedom
+# Multiple R-squared:  0.09426,	Adjusted R-squared:  0.08132 
+# F-statistic: 7.285 on 1 and 70 DF,  p-value: 0.008709
 
-model.names <- c('Surf_Pve1', 'Surf_Pve2', 'Surf_Pve3', 'Surf_Pve4')
 
-aictab(cand.set = models, modnames = model.names)
+# AIC test
+models_Surf_Pve <- list(Surf_Pve2, Surf_Pve5, Surf_Pve3)
+
+model.names <- c('Surf_Pve2', 'Surf_Pve5', 'Surf_Pve3')
+
+#class(Surf_Pve2$na.action)
+
+aictab(cand.set = models_Surf_Pve, modnames = model.names)
+
+# -----------
 
 
 # Surface Spi
@@ -1291,7 +1357,7 @@ ks.test(surface_Pve$value, surface_Pve$conc, y = "pexp")
 # Logarithmic
 plot(surface_Pve$conc, surface_Pve$value)
 #fit the model
-model <- lm(value ~ log(conc), data = surface_Pve_wocon)
+model <- lm(value ~ log(conc), data = surface_Pve)
 #view the output of the model
 summary(model)
 # OUTPUT: Call:
@@ -1309,28 +1375,6 @@ summary(model)
 # Multiple R-squared:  0.09426,	Adjusted R-squared:  0.08132 
 # F-statistic: 7.285 on 1 and 70 DF,  p-value: 0.008709
 
-#-------test -------------
-#fit the model
-model1 <- lm(log(value) ~ log(conc), data = surface_Pve_wocon)
-#view the output of the model
-summary(model1)
-
-model2 <- lm(log(value) ~ log(conc), data = surface_Pve_wocon100)
-#view the output of the model
-summary(model2)
-
-model3 <- lm(value ~ conc, data = surface_Pve)
-#view the output of the model
-summary(model3)
-
-
-models <- list( model1, model2)
-
-model.names <- c('model1', 'model2')
-
-aictab(cand.set = models, modnames = model.names)
-
-# -----------
 
 # Surface Spi
 surface_Spi <- subset(surface_all, spec == "Spi")
