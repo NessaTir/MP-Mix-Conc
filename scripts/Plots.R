@@ -322,11 +322,14 @@ growth_plot <- surface_plot / volume_plot / weight_plot / necro_plot
 
 
 ## ---- 4.3. Polyp activity ----------------------------------------------------
-polyps <- ggplot(Polyps, aes(x = tp, y = ranks)) +
+Polyps_wo0 <-  Polyps %>%
+  # select everything but the timepoint before the treatment
+  filter(tp!="0")
+polyps <- ggplot(Polyps_wo0, aes(x = tp, y = ranks)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
-  scale_x_continuous(labels= c("0", "4", "8", "12")) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
   scale_color_manual(values = color_scheme,
                      labels = treat_labs) +
   scale_fill_manual(values = color_scheme,

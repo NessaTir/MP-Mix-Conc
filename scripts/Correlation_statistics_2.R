@@ -2,7 +2,12 @@
 # This script focuses on the statistical analysis of the relationship of all processed data and the concentrations. 
 # Relationship will be tested for beeing
 # 1) linear
-# 2) exponential
+#   - untransformed
+#   - log-log transformed
+#   - log-log transformed with low concentrations
+#   - log-log transformed with high concentrations
+# 2) logarithmic
+# 3) exponential
 
 # This script is closely connected to 'Plots - 4.5. Correlation Plot'
 
@@ -17,9 +22,6 @@ library(rstatix)
 
 # test for linear correlation
 library(ggpubr)
-
-# for GAM
-library(mgcv)
 
 # using AIC to find the best fitted test
 library(AICcmodavg)
@@ -89,8 +91,7 @@ summary(Surf_Pve1)
 surface_Pve_wocon <- surface_Pve %>%
   subset(conc != "0") %>%
   filter(value_log != "NaN")
-Surf_Pve2 <- glm(value_log ~ conc_log,
-                data = surface_Pve_wocon)
+Surf_Pve2 <- lm(value_log ~ conc_log, data = surface_Pve_wocon)
 #view the output of the model
 summary(Surf_Pve2)
 # OUTPUT: 	Call:
@@ -113,7 +114,7 @@ summary(Surf_Pve2)
 surface_Pve_wocon100 <- surface_Pve_wocon %>%
   subset(conc != "100") %>%
   filter(value_log != "NaN")
-Surf_Pve3 <- glm(value_log ~ conc_log, data = surface_Pve_wocon100)
+Surf_Pve3 <- lm(value_log ~ conc_log, data = surface_Pve_wocon100)
 #view the output of the model
 summary(Surf_Pve3)
 # OUTPUT: 	Call:
@@ -132,17 +133,15 @@ summary(Surf_Pve3)
 # Multiple R-squared:  0.00037,	Adjusted R-squared:  -0.01923 
 # F-statistic: 0.01888 on 1 and 51 DF,  p-value: 0.8913
 
-Surf_Pve2 <- Surf_Pve2[-c(9)]
-!Surf_Pve2$na.action
 
 # log-log transformed - late linearity
 surface_Pve_wocon01 <- surface_Pve_wocon %>%
   subset(conc != "0.1")
-Surf_Pve4 <- glm(log(value) ~ log(conc), data = surface_Pve_wocon01)
+Surf_Pve4 <- lm(value_log ~ conc_log, data = surface_Pve_wocon01)
 #view the output of the model
 summary(Surf_Pve4)
 # OUTPUT: 	Call:
-# lm(formula = log(value) ~ log(conc), data = surface_Pve_wocon01)
+# lm(formula = value_log ~ conc_log, data = surface_Pve_wocon01)
 # Residuals:
 #   Min      1Q  Median      3Q     Max 
 # -2.0450 -0.4402  0.0411  0.5478  1.1242 
@@ -160,1191 +159,23 @@ summary(Surf_Pve4)
 # Logarithmic
 plot(surface_Pve$conc, surface_Pve$value)
 #fit the model
-Surf_Pve5 <- glm(value ~ log(conc), data = surface_Pve_wocon)
+Surf_Pve5 <- lm(value ~ conc_log, data = surface_Pve_wocon)
 #view the output of the model
 summary(Surf_Pve5)
 # OUTPUT: Call:
-# lm(formula = surface_Pve_wocon$value ~ log(surface_Pve_wocon$conc))
+# lm(formula = value ~ log(conc), data = surface_Pve_wocon)
 # Residuals:
-#   Min      1Q  Median      3Q     Max 
-# -44.915 -11.806  -3.226  11.903  62.605 
+#   Min     1Q Median     3Q    Max 
+# -30.43 -14.27  -4.09  11.44  61.66 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                  33.5447     2.6524  12.647  < 2e-16 ***
-#   log(surface_Pve_wocon$conc)  -2.5386     0.9406  -2.699  0.00871 ** 
+# (Intercept)  34.4908     2.4895  13.855   <2e-16 ***
+#   log(conc)    -1.8742     0.9026  -2.076   0.0417 *  
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 20.55 on 70 degrees of freedom
-# Multiple R-squared:  0.09426,	Adjusted R-squared:  0.08132 
-# F-statistic: 7.285 on 1 and 70 DF,  p-value: 0.008709
-
-
-# AIC test
-models_Surf_Pve <- list(Surf_Pve2, Surf_Pve5, Surf_Pve3)
-
-model.names <- c('Surf_Pve2', 'Surf_Pve5', 'Surf_Pve3')
-
-#class(Surf_Pve2$na.action)
-
-aictab(cand.set = models_Surf_Pve, modnames = model.names)
-
-# -----------
-
-
-# Surface Spi
-surface_Spi <- subset(surface, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(surface_Spi$value, surface_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Spi$value and surface_Spi$conc
-# t = -2.5649, df = 88, p-value = 0.01201
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.4464486 -0.0599237
-# sample estimates:
-#   cor 
-# -0.2637419  
-
-# log-log transformed
-surface_Spi_wocon <- surface_Spi %>%
-  subset(conc != "0")
-cor.test(surface_Spi_wocon$value_log, surface_Spi_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Spi_wocon$value_log and surface_Spi_wocon$conc_log
-# t = -2.1079, df = 63, p-value = 0.03902
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.47108258 -0.01362858
-# sample estimates:
-#   cor 
-# -0.2566745  
-
-# log-log transformed - early linearity
-surface_Spi_wocon100 <- surface_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(surface_Spi_wocon100$value_log, surface_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Spi_wocon100$value_log and surface_Spi_wocon100$conc_log
-# t = -1.3676, df = 48, p-value = 0.1778
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.4478609  0.0895187
-# sample estimates:
-#   cor 
-# -0.1936544  
-
-# log-log transformed - late linearity
-surface_Spi_wocon01 <- surface_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(surface_Spi_wocon01$value_log, surface_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  surface_Spi_wocon01$value_log and surface_Spi_wocon01$conc_log
-# t = -1.5131, df = 47, p-value = 0.137
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.4683343  0.0699131
-# sample estimates:
-#   cor 
-# -0.2155205 
-
-
-## ---- 4.02. Volume ----------------------------------------------------------
-# Volume Pve
-volume_Pve <- subset(volume, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(volume_Pve$value, volume_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Pve$value and volume_Pve$conc
-# t = -3.6324, df = 88, p-value = 0.0004715
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.5286500 -0.1664462
-# sample estimates:
-#   cor 
-# -0.3610907 
-
-# log-log transformed
-volume_Pve_wocon <- volume_Pve %>%
-  subset(conc != "0")
-cor.test(volume_Pve_wocon$value_log, volume_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Pve_wocon$value_log and volume_Pve_wocon$conc_log
-# t = -2.2445, df = 68, p-value = 0.02805
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.46868590 -0.02948102
-# sample estimates:
-#   cor 
-# -0.2626357
-
-# log-log transformed - early linearity
-volume_Pve_wocon100 <- volume_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(volume_Pve_wocon100$value_log, volume_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Pve_wocon100$value_log and volume_Pve_wocon100$conc_log
-# t = 0.29054, df = 52, p-value = 0.7726
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2299815  0.3047339
-# sample estimates:
-#   cor 
-# 0.0402582   
-
-# log-log transformed - late linearity
-volume_Pve_wocon01 <- volume_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(volume_Pve_wocon01$value_log, volume_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Pve_wocon01$value_log and volume_Pve_wocon01$conc_log
-# t = -2.1636, df = 50, p-value = 0.0353
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.5236761 -0.0213985
-# sample estimates:
-#   cor 
-# -0.2925902  
-
-
-# Volume Spi
-volume_Spi <- subset(volume, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(volume_Spi$value, volume_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Spi$value and volume_Spi$conc
-# t = -2.3846, df = 88, p-value = 0.01925
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.43144116 -0.04138206
-# sample estimates:
-#   cor 
-# -0.2463619 
-
-# log-log transformed
-volume_Spi_wocon <- volume_Spi %>%
-  subset(conc != "0")
-cor.test(volume_Spi_wocon$value_log, volume_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Spi_wocon$value_log and volume_Spi_wocon$conc_log
-# t = -1.2413, df = 68, p-value = 0.2188
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.37085306  0.08924552
-# sample estimates:
-#   cor 
-# -0.1488499 
-
-# log-log transformed - early linearity
-volume_Spi_wocon100 <- volume_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(volume_Spi_wocon100$value_log, volume_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Spi_wocon100$value_log and volume_Spi_wocon100$conc_log
-# t = 0.70887, df = 51, p-value = 0.4816
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1762228  0.3594723
-# sample estimates:
-#   cor 
-# 0.0987759 
-
-# log-log transformed - late linearity
-volume_Spi_wocon01 <- volume_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(volume_Spi_wocon01$value_log, volume_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  volume_Spi_wocon01$value_log and volume_Spi_wocon01$conc_log
-# t = -1.9589, df = 50, p-value = 0.05571
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.503216676  0.006385334
-# sample estimates:
-#   cor 
-# -0.2669802
-
-
-## ---- 4.03. Calcification ----------------------------------------------------
-# calcification Pve
-calcification_Pve <- subset(calcification, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(calcification_Pve$value, calcification_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Pve$value and calcification_Pve$conc
-# t = -2.0478, df = 88, p-value = 0.04356
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.402581624 -0.006465604
-# sample estimates:
-#   cor 
-# -0.2132712 
-
-# log-log transformed
-calcification_Pve_wocon <- calcification_Pve %>%
-  subset(conc != "0")
-cor.test(calcification_Pve_wocon$value_log, calcification_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Pve_wocon$value_log and calcification_Pve_wocon$conc_log
-# t = -1.7739, df = 70, p-value = 0.08042
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.41895155  0.02547866
-# sample estimates:
-#   cor 
-# -0.2074142
-
-# log-log transformed - early linearity
-calcification_Pve_wocon100 <- calcification_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(calcification_Pve_wocon100$value_log, calcification_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Pve_wocon100$value_log and calcification_Pve_wocon100$conc_log
-# t = 0.24975, df = 52, p-value = 0.8038
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2353286  0.2995969
-# sample estimates:
-#   cor 
-# 0.03461298  
-
-# log-log transformed - late linearity
-calcification_Pve_wocon01 <- calcification_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(calcification_Pve_wocon01$value_log, calcification_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Pve_wocon01$value_log and calcification_Pve_wocon01$conc_log
-# t = -1.8981, df = 52, p-value = 0.06324
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.48898468  0.01417368
-# sample estimates:
-#   cor 
-# -0.2545529  
-
-
-# calcification Spi
-calcification_Spi <- subset(calcification, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(calcification_Spi$value, calcification_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Spi$value and calcification_Spi$conc
-# t = -2.3848, df = 88, p-value = 0.01923
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.43146410 -0.04141021
-# sample estimates:
-#   cor 
-# -0.2463884 
-
-# log-log transformed
-calcification_Spi_wocon <- calcification_Spi %>%
-  subset(conc != "0")
-cor.test(calcification_Spi_wocon$value_log, calcification_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Spi_wocon$value_log and calcification_Spi_wocon$conc_log
-# t = -2.1373, df = 68, p-value = 0.03618
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.45881613 -0.01691368
-# sample estimates:
-#   cor 
-# -0.2508906 
-
-# log-log transformed - early linearity
-calcification_Spi_wocon100 <- calcification_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(calcification_Spi_wocon100$value_log, calcification_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Spi_wocon100$value_log and calcification_Spi_wocon100$conc_log
-# t = -0.49953, df = 50, p-value = 0.6196
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.3368907  0.2064005
-# sample estimates:
-#   cor 
-# -0.07046911
-
-# log-log transformed - late linearity
-calcification_Spi_wocon01 <- calcification_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(calcification_Spi_wocon01$value_log, calcification_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  calcification_Spi_wocon01$value_log and calcification_Spi_wocon01$conc_log
-# t = -1.2663, df = 52, p-value = 0.211
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.42121563  0.09940143
-# sample estimates:
-#   cor 
-# -0.1729627 
-
-
-## ---- 4.04. Necrosis ---------------------------------------------------------
-# necrosis Pve
-necrosis_Pve <- subset(necrosis, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(necrosis_Pve$value, necrosis_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Pve$value and necrosis_Pve$conc
-# t = 0.79114, df = 88, p-value = 0.431
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1252331  0.2861487
-# sample estimates:
-#   cor 
-# 0.08403752 
-
-# log-log transformed
-necrosis_Pve_wocon <- necrosis_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(necrosis_Pve_wocon$value_log, necrosis_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Pve_wocon$value_log and necrosis_Pve_wocon$conc_log
-# t = 0.078869, df = 6, p-value = 0.9397
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.6880956  0.7205150
-# sample estimates:
-#   cor 
-# 0.0321816 
-
-# log-log transformed - early linearity
-necrosis_Pve_wocon100 <- necrosis_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(necrosis_Pve_wocon100$value_log, necrosis_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Pve_wocon100$value_log and necrosis_Pve_wocon100$conc_log
-# t = 0.24975, df = 52, p-value = 0.8038
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2353286  0.2995969
-# sample estimates:
-#   cor 
-# 0.03461298  
-
-# log-log transformed - late linearity
-necrosis_Pve_wocon01 <- necrosis_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(necrosis_Pve_wocon01$value_log, necrosis_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Pve_wocon01$value_log and necrosis_Pve_wocon01$conc_log
-# t = -1.8981, df = 52, p-value = 0.06324
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.48898468  0.01417368
-# sample estimates:
-#   cor 
-# -0.2545529  
-
-
-# necrosis Spi
-necrosis_Spi <- subset(necrosis, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(necrosis_Spi$value, necrosis_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Spi$value and necrosis_Spi$conc
-# t = -2.3848, df = 88, p-value = 0.01923
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.43146410 -0.04141021
-# sample estimates:
-#   cor 
-# -0.2463884 
-
-# log-log transformed
-necrosis_Spi_wocon <- necrosis_Spi %>%
-  subset(conc != "0")
-cor.test(necrosis_Spi_wocon$value_log, necrosis_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Spi_wocon$value_log and necrosis_Spi_wocon$conc_log
-# t = -2.1373, df = 68, p-value = 0.03618
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.45881613 -0.01691368
-# sample estimates:
-#   cor 
-# -0.2508906 
-
-# log-log transformed - early linearity
-necrosis_Spi_wocon100 <- necrosis_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(necrosis_Spi_wocon100$value_log, necrosis_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Spi_wocon100$value_log and necrosis_Spi_wocon100$conc_log
-# t = -0.49953, df = 50, p-value = 0.6196
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.3368907  0.2064005
-# sample estimates:
-#   cor 
-# -0.07046911
-
-# log-log transformed - late linearity
-necrosis_Spi_wocon01 <- necrosis_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(necrosis_Spi_wocon01$value_log, necrosis_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  necrosis_Spi_wocon01$value_log and necrosis_Spi_wocon01$conc_log
-# t = -1.2663, df = 52, p-value = 0.211
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.42121563  0.09940143
-# sample estimates:
-#   cor 
-# -0.1729627 
-
-
-## ---- 4.05. Polyp activity ---------------------------------------------------
-# polypactivity Pve
-polypactivity_Pve <- subset(polypactivity, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(polypactivity_Pve$value, polypactivity_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Pve$value and polypactivity_Pve$conc
-# t = -6.5182, df = 88, p-value = 4.313e-09
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.6955206 -0.4122429
-# sample estimates:
-#   cor 
-# -0.5706192 
-
-# log-log transformed
-polypactivity_Pve_wocon <- polypactivity_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(polypactivity_Pve_wocon$value_log, polypactivity_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Pve_wocon$value_log and polypactivity_Pve_wocon$conc_log
-# t = -5.5024, df = 70, p-value = 5.772e-07
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.6929418 -0.3641733
-# sample estimates:
-#   cor 
-# -0.5494833 
-
-# log-log transformed - early linearity
-polypactivity_Pve_wocon100 <- polypactivity_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(polypactivity_Pve_wocon100$value_log, polypactivity_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Pve_wocon100$value_log and polypactivity_Pve_wocon100$conc_log
-# t = -2.7713, df = 52, p-value = 0.007728
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.5715859 -0.1006337
-# sample estimates:
-#   cor 
-# -0.358728 
-
-# log-log transformed - late linearity
-polypactivity_Pve_wocon01 <- polypactivity_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(polypactivity_Pve_wocon01$value_log, polypactivity_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Pve_wocon01$value_log and polypactivity_Pve_wocon01$conc_log
-# t = -3.7539, df = 52, p-value = 0.0004404
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.6492409 -0.2213599
-# sample estimates:
-#   cor 
-# -0.4617517  
-
-
-# polypactivity Spi
-polypactivity_Spi <- subset(polypactivity, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(polypactivity_Spi$value, polypactivity_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Spi$value and polypactivity_Spi$conc
-# t = -2.4506, df = 88, p-value = 0.01624
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.43697008 -0.04818192
-# sample estimates:
-#   cor 
-# -0.2527511 
-
-# log-log transformed
-polypactivity_Spi_wocon <- polypactivity_Spi %>%
-  subset(conc != "0")
-cor.test(polypactivity_Spi_wocon$value_log, polypactivity_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Spi_wocon$value_log and polypactivity_Spi_wocon$conc_log
-# t = -2.583, df = 70, p-value = 0.01189
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.4929697 -0.0679671
-# sample estimates:
-#   cor 
-# -0.2949908 
-
-# log-log transformed - early linearity
-polypactivity_Spi_wocon100 <- polypactivity_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(polypactivity_Spi_wocon100$value_log, polypactivity_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Spi_wocon100$value_log and polypactivity_Spi_wocon100$conc_log
-# t = -1.0022, df = 52, p-value = 0.3209
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.3910042  0.1350841
-# sample estimates:
-#   cor 
-# -0.1376555 
-
-# log-log transformed - late linearity
-polypactivity_Spi_wocon01 <- polypactivity_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(polypactivity_Spi_wocon01$value_log, polypactivity_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  polypactivity_Spi_wocon01$value_log and polypactivity_Spi_wocon01$conc_log
-# t = -2.2597, df = 52, p-value = 0.02806
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.52476767 -0.03398397
-# sample estimates:
-#   cor 
-# -0.2990235 
-
-
-## ---- 4.06. YII --------------------------------------------------------------
-# YII Pve
-YII_Pve <- subset(YII, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(YII_Pve$value, YII_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Pve$value and YII_Pve$conc
-# t = 2.0914, df = 88, p-value = 0.03938
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   0.0110040 0.4063778
-# sample estimates:
-#   cor 
-# 0.2175992  
-
-# log-log transformed
-YII_Pve_wocon <- YII_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(YII_Pve_wocon$value_log, YII_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Pve_wocon$value_log and YII_Pve_wocon$conc_log
-# t = 3.4942, df = 70, p-value = 0.0008289
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   0.1687800 0.5664734
-# sample estimates:
-#   cor 
-# 0.3853798 
-
-# log-log transformed - early linearity
-YII_Pve_wocon100 <- YII_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(YII_Pve_wocon100$value_log, YII_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Pve_wocon100$value_log and YII_Pve_wocon100$conc_log
-# t = 3.2642, df = 52, p-value = 0.001944
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   0.1625768 0.6125121
-# sample estimates:
-#   cor 
-# 0.4123855 
-
-# log-log transformed - late linearity
-YII_Pve_wocon01 <- YII_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(YII_Pve_wocon01$value_log, YII_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Pve_wocon01$value_log and YII_Pve_wocon01$conc_log
-# t = 0.72551, df = 52, p-value = 0.4714
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1722729  0.3582629
-# sample estimates:
-#   cor 
-# 0.1001053 
-
-
-# YII Spi
-YII_Spi <- subset(YII, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(YII_Spi$value, YII_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Spi$value and YII_Spi$conc
-# t = 0.98479, df = 88, p-value = 0.3274
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1049549  0.3049041
-# sample estimates:
-#   cor 
-# 0.1044055 
-
-# log-log transformed
-YII_Spi_wocon <- YII_Spi %>%
-  subset(conc != "0")
-cor.test(YII_Spi_wocon$value_log, YII_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Spi_wocon$value_log and YII_Spi_wocon$conc_log
-# t = 1.9931, df = 70, p-value = 0.05015
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   7.457339e-05 4.397965e-01
-# sample estimates:
-#   cor 
-# 0.2317391 
-
-# log-log transformed - early linearity
-YII_Spi_wocon100 <- YII_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(YII_Spi_wocon100$value_log, YII_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Spi_wocon100$value_log and YII_Spi_wocon100$conc_log
-# t = 2.2705, df = 52, p-value = 0.02735
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   0.03541451 0.52580474
-# sample estimates:
-#   cor 
-# 0.3003272  
-
-# log-log transformed - late linearity
-YII_Spi_wocon01 <- YII_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(YII_Spi_wocon01$value_log, YII_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  YII_Spi_wocon01$value_log and YII_Spi_wocon01$conc_log
-# t = 1.3515, df = 52, p-value = 0.1824
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.08788263  0.43072768
-# sample estimates:
-#   cor 
-# 0.1842127 
-
-
-## ---- 4.07. FvFm -------------------------------------------------------------
-# FvFm Pve
-FvFm_Pve <- subset(FvFm, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(FvFm_Pve$value, FvFm_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Pve$value and FvFm_Pve$conc
-# t = 1.914, df = 88, p-value = 0.05887
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.007486955  0.390824915
-# sample estimates:
-#   cor 
-# 0.1999141  
-
-# log-log transformed
-FvFm_Pve_wocon <- FvFm_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(FvFm_Pve_wocon$value_log, FvFm_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Pve_wocon$value_log and FvFm_Pve_wocon$conc_log
-# t = 1.88, df = 70, p-value = 0.06427
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.01310153  0.42910697
-# sample estimates:
-#   cor 
-# 0.2192324 
-
-# log-log transformed - early linearity
-FvFm_Pve_wocon100 <- FvFm_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(FvFm_Pve_wocon100$value_log, FvFm_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Pve_wocon100$value_log and FvFm_Pve_wocon100$conc_log
-# t = -0.24195, df = 52, p-value = 0.8098
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2986131  0.2363490
-# sample estimates:
-#   cor 
-# -0.03353379 
-
-# log-log transformed - late linearity
-FvFm_Pve_wocon01 <- FvFm_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(FvFm_Pve_wocon01$value_log, FvFm_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Pve_wocon01$value_log and FvFm_Pve_wocon01$conc_log
-# t = 2.5341, df = 52, p-value = 0.01432
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   0.06999924 0.55044088
-# sample estimates:
-#   cor 
-# 0.3315456  
-
-
-# FvFm Spi
-FvFm_Spi <- subset(FvFm, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(FvFm_Spi$value, FvFm_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Spi$value and FvFm_Spi$conc
-# t = -1.7345, df = 88, p-value = 0.08633
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.37479463  0.02626463
-# sample estimates:
-#   cor 
-# -0.1818154 
-
-# log-log transformed
-FvFm_Spi_wocon <- FvFm_Spi %>%
-  subset(conc != "0")
-cor.test(FvFm_Spi_wocon$value_log, FvFm_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Spi_wocon$value_log and FvFm_Spi_wocon$conc_log
-# t = -1.4534, df = 70, p-value = 0.1506
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.38745481  0.06301847
-# sample estimates:
-#   cor 
-# -0.1711488  
-
-# log-log transformed - early linearity
-FvFm_Spi_wocon100 <- FvFm_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(FvFm_Spi_wocon100$value_log, FvFm_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Spi_wocon100$value_log and FvFm_Spi_wocon100$conc_log
-# t = 0.1632, df = 52, p-value = 0.871
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2466285  0.2886381
-# sample estimates:
-#   cor 
-# 0.02262619  
-
-# log-log transformed - late linearity
-FvFm_Spi_wocon01 <- FvFm_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(FvFm_Spi_wocon01$value_log, FvFm_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  FvFm_Spi_wocon01$value_log and FvFm_Spi_wocon01$conc_log
-# t = -1.2151, df = 52, p-value = 0.2298
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.4154426  0.1063250
-# sample estimates:
-#   cor 
-# -0.1661663 
-
-
-
-## ---- 4.08. rETRmax -------------------------------------------------------------
-# rETR Pve
-rETR_Pve <- subset(rETR, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(rETR_Pve$value, rETR_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Pve$value and rETR_Pve$conc
-# t = -0.15922, df = 88, p-value = 0.8739
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2232773  0.1907908
-# sample estimates:
-#   cor 
-# -0.01697087  
-
-# log-log transformed
-rETR_Pve_wocon <- rETR_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(rETR_Pve_wocon$value_log, rETR_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Pve_wocon$value_log and rETR_Pve_wocon$conc_log
-# t = 0.1167, df = 70, p-value = 0.9074
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2184274  0.2448244
-# sample estimates:
-#   cor 
-# 0.01394694 
-
-# log-log transformed - early linearity
-rETR_Pve_wocon100 <- rETR_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(rETR_Pve_wocon100$value_log, rETR_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Pve_wocon100$value_log and rETR_Pve_wocon100$conc_log
-# t = -0.069092, df = 52, p-value = 0.9452
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2766318  0.2588437
-# sample estimates:
-#   cor 
-# -0.009580939 
-
-# log-log transformed - late linearity
-rETR_Pve_wocon01 <- rETR_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(rETR_Pve_wocon01$value_log, rETR_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Pve_wocon01$value_log and rETR_Pve_wocon01$conc_log
-# t = -0.27582, df = 52, p-value = 0.7838
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.3028826  0.2319122
-# sample estimates:
-#   cor 
-# -0.0382218  
-
-
-# rETR Spi
-rETR_Spi <- subset(rETR, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(rETR_Spi$value, rETR_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Spi$value and rETR_Spi$conc
-# t = 0.027661, df = 88, p-value = 0.978
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2042672  0.2099116
-# sample estimates:
-#   cor 
-# 0.002948651 
-
-# log-log transformed
-rETR_Spi_wocon <- rETR_Spi %>%
-  subset(conc != "0")
-cor.test(rETR_Spi_wocon$value_log, rETR_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Spi_wocon$value_log and rETR_Spi_wocon$conc_log
-# t = 0.22257, df = 70, p-value = 0.8245
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2063470  0.2566801
-# sample estimates:
-#   cor 
-# 0.02659284  
-
-# log-log transformed - early linearity
-rETR_Spi_wocon100 <- rETR_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(rETR_Spi_wocon100$value_log, rETR_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Spi_wocon100$value_log and rETR_Spi_wocon100$conc_log
-# t = 0.2524, df = 52, p-value = 0.8017
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2349812  0.2999315
-# sample estimates:
-#   cor 
-# 0.03498021  
-
-# log-log transformed - late linearity
-rETR_Spi_wocon01 <- rETR_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(rETR_Spi_wocon01$value_log, rETR_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  rETR_Spi_wocon01$value_log and rETR_Spi_wocon01$conc_log
-# t = 0.23096, df = 52, p-value = 0.8183
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2377866  0.2972250
-# sample estimates:
-#   cor 
-# 0.03201217 
-
-
-
-## ---- 4.09. Ek ---------------------------------------------------------------
-# Ek Pve
-Ek_Pve <- subset(Ek, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(Ek_Pve$value, Ek_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Pve$value and Ek_Pve$conc
-# t = -0.30577, df = 88, p-value = 0.7605
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2380632  0.1756983
-# sample estimates:
-#   cor 
-# -0.03257819 
-
-# log-log transformed
-Ek_Pve_wocon <- Ek_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(Ek_Pve_wocon$value_log, Ek_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Pve_wocon$value_log and Ek_Pve_wocon$conc_log
-# t = -0.068086, df = 70, p-value = 0.9459
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2393549  0.2239532
-# sample estimates:
-#   cor 
-# -0.008137534 
-
-# log-log transformed - early linearity
-Ek_Pve_wocon100 <- Ek_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(Ek_Pve_wocon100$value_log, Ek_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Pve_wocon100$value_log and Ek_Pve_wocon100$conc_log
-# t = -0.18104, df = 52, p-value = 0.857
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2909037  0.2443043
-# sample estimates:
-#   cor 
-# -0.02509808 
-
-# log-log transformed - late linearity
-Ek_Pve_wocon01 <- Ek_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(Ek_Pve_wocon01$value_log, Ek_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Pve_wocon01$value_log and Ek_Pve_wocon01$conc_log
-# t = -0.53669, df = 52, p-value = 0.5938
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.3353164  0.1974651
-# sample estimates:
-#   cor 
-# -0.07421965 
-
-
-# Ek Spi
-Ek_Spi <- subset(Ek, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(Ek_Spi$value, Ek_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Spi$value and Ek_Spi$conc
-# t = 0.24363, df = 88, p-value = 0.8081
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1821077  0.2318073
-# sample estimates:
-#   cor 
-# 0.02596256 
-
-# log-log transformed
-Ek_Spi_wocon <- Ek_Spi %>%
-  subset(conc != "0")
-cor.test(Ek_Spi_wocon$value_log, Ek_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Spi_wocon$value_log and Ek_Spi_wocon$conc_log
-# t = 0.26028, df = 70, p-value = 0.7954
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2020291  0.2608840
-# sample estimates:
-#   cor 
-# 0.03109481  
-
-# log-log transformed - early linearity
-Ek_Spi_wocon100 <- Ek_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(Ek_Spi_wocon100$value_log, Ek_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Spi_wocon100$value_log and Ek_Spi_wocon100$conc_log
-# t = -0.15227, df = 52, p-value = 0.8796
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2872481  0.2480514
-# sample estimates:
-#   cor 
-# -0.0211113  
-
-# log-log transformed - late linearity
-Ek_Spi_wocon01 <- Ek_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(Ek_Spi_wocon01$value_log, Ek_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  Ek_Spi_wocon01$value_log and Ek_Spi_wocon01$conc_log
-# t = 0.26362, df = 52, p-value = 0.7931
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2335118  0.3013458
-# sample estimates:
-#   cor 
-# 0.03653302 
-
-
-## ---- 4.10. Alpha ------------------------------------------------------------
-# alpha Pve
-alpha_Pve <- subset(alpha, spec == "Pve") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-
-# untransformed
-cor.test(alpha_Pve$value, alpha_Pve$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Pve$value and alpha_Pve$conc
-# t = 0.50094, df = 88, p-value = 0.6177
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1554841  0.2575708
-# sample estimates:
-#   cor 
-# 0.05332403 
-
-# log-log transformed
-alpha_Pve_wocon <- alpha_Pve %>%
-  subset(conc != "0" &
-           value_log != "-Inf")
-cor.test(alpha_Pve_wocon$value_log, alpha_Pve_wocon$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Pve_wocon$value_log and alpha_Pve_wocon$conc_log
-# t = 0.63833, df = 70, p-value = 0.5253
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1583865  0.3024124
-# sample estimates:
-#   cor 
-# 0.07607348 
-
-# log-log transformed - early linearity
-alpha_Pve_wocon100 <- alpha_Pve_wocon %>%
-  subset(conc != "100")
-cor.test(alpha_Pve_wocon100$value_log, alpha_Pve_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Pve_wocon100$value_log and alpha_Pve_wocon100$conc_log
-# t = 0.38202, df = 52, p-value = 0.704
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2179457  0.3161839
-# sample estimates:
-#   cor 
-# 0.05290212 
-
-# log-log transformed - late linearity
-alpha_Pve_wocon01 <- alpha_Pve_wocon %>%
-  subset(conc != "0.1")
-cor.test(alpha_Pve_wocon01$value_log, alpha_Pve_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Pve_wocon01$value_log and alpha_Pve_wocon01$conc_log
-# t = 0.97332, df = 52, p-value = 0.3349
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1389754  0.3876394
-# sample estimates:
-#   cor 
-# 0.1337627 
-
-
-# alpha Spi
-alpha_Spi <- subset(alpha, spec == "Spi") %>%
-  mutate(value_log = log(value),
-         conc_log = log(conc))
-# untransformed
-cor.test(alpha_Spi$value, alpha_Spi$conc,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Spi$value and alpha_Spi$conc
-# t = -0.45272, df = 88, p-value = 0.6519
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2527721  0.1604889
-# sample estimates:
-#   cor 
-# -0.04820436 
-
-# log-log transformed
-alpha_Spi_wocon <- alpha_Spi %>%
-  subset(conc != "0")
-cor.test(alpha_Spi_wocon$value_log, alpha_Spi_wocon$conc_log,  conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Spi_wocon$value_log and alpha_Spi_wocon$conc_log
-# t = 0.077911, df = 70, p-value = 0.9381
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2228376  0.2404615
-# sample estimates:
-#   cor 
-# 0.009311693 
-
-# log-log transformed - early linearity
-alpha_Spi_wocon100 <- alpha_Spi_wocon %>%
-  subset(conc != "100")
-cor.test(alpha_Spi_wocon100$value_log, alpha_Spi_wocon100$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Spi_wocon100$value_log and alpha_Spi_wocon100$conc_log
-# t = 0.79494, df = 52, p-value = 0.4303
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.1629676  0.3665796
-# sample estimates:
-#   cor 
-# 0.1095744  
-
-# log-log transformed - late linearity
-alpha_Spi_wocon01 <- alpha_Spi_wocon %>%
-  subset(conc != "0.1")
-cor.test(alpha_Spi_wocon01$value_log, alpha_Spi_wocon01$conc_log, conf.level = 0.95, method = "pearson")
-# OUTPUT: 	Pearson's product-moment correlation
-# data:  alpha_Spi_wocon01$value_log and alpha_Spi_wocon01$conc_log
-# t = 0.09692, df = 52, p-value = 0.9232
-# alternative hypothesis: true correlation is not equal to 0
-# 95 percent confidence interval:
-#   -0.2552398  0.2801915
-# sample estimates:
-#   cor 
-# 0.0134392 
-
-
-
-
-# ----- 5. Other Relationships -------------------------------------------------
-## ---- 5.01. Surface ----------------------------------------------------------
-# Surface Pve
-surface_Pve <- subset(surface, spec == "Pve")
+# Residual standard error: 19.17 on 67 degrees of freedom
+# Multiple R-squared:  0.06046,	Adjusted R-squared:  0.04644 
+# F-statistic: 4.312 on 1 and 67 DF,  p-value: 0.04169
 
 # Exponential
 ks.test(surface_Pve$value, surface_Pve$conc, y = "pexp")
@@ -1354,30 +185,133 @@ ks.test(surface_Pve$value, surface_Pve$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no exp correlation
 
-# Logarithmic
-plot(surface_Pve$conc, surface_Pve$value)
-#fit the model
-model <- lm(value ~ log(conc), data = surface_Pve)
+
+# AIC test
+models_Surf_Pve <- list(Surf_Pve2, Surf_Pve3, Surf_Pve4)
+model.names <- c('Surf_Pve2', 'Surf_Pve3', 'Surf_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Surf_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Surf_Pve3 3 107.16       0.00   0.99   0.99 -50.33
+# Surf_Pve4 3 117.30      10.15   0.01   1.00 -55.40
+# Surf_Pve2 3 146.47      39.31   0.00   1.00 -70.05
+
+
+### --- 4.01.2. Spi ------------------------------------------------------------
+# Surface Spi
+surface_Spi <- subset(surface, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Surf_Spi1 <- lm((value) ~ (conc), data = surface_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = surface_Pve_wocon$value ~ log(surface_Pve_wocon$conc))
+summary(Surf_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = surface_Spi)
 # Residuals:
-#   Min      1Q  Median      3Q     Max 
-# -44.915 -11.806  -3.226  11.903  62.605 
+#        Min       1Q   Median       3Q      Max 
+# -111.935   -9.132    5.044   19.470   57.807 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                  33.5447     2.6524  12.647  < 2e-16 ***
-#   log(surface_Pve_wocon$conc)  -2.5386     0.9406  -2.699  0.00871 ** 
+# (Intercept) 34.79340    3.89116   8.942 5.41e-14 ***
+#   conc        -0.22205    0.08657  -2.565    0.012 *  
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 20.55 on 70 degrees of freedom
-# Multiple R-squared:  0.09426,	Adjusted R-squared:  0.08132 
-# F-statistic: 7.285 on 1 and 70 DF,  p-value: 0.008709
+# Residual standard error: 32.09 on 88 degrees of freedom
+# Multiple R-squared:  0.06956,	Adjusted R-squared:  0.05899 
+# F-statistic: 6.579 on 1 and 88 DF,  p-value: 0.01201 
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+surface_Spi_wocon <- surface_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Surf_Spi2 <- lm(value_log ~ conc_log, data = surface_Spi_wocon)
+#view the output of the model
+summary(Surf_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = surface_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -3.4938 -0.2297  0.1302  0.4931  1.1076 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  3.49027    0.11303  30.880   <2e-16 ***
+#   conc_log    -0.08604    0.04082  -2.108    0.039 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.8314 on 63 degrees of freedom
+# Multiple R-squared:  0.06588,	Adjusted R-squared:  0.05105 
+# F-statistic: 4.443 on 1 and 63 DF,  p-value: 0.03902
+
+# log-log transformed - early linearity
+surface_Spi_wocon100 <- surface_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Surf_Spi3 <- lm(value_log ~ conc_log, data = surface_Spi_wocon100)
+#view the output of the model
+summary(Surf_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = surface_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -3.4841 -0.1057  0.1606  0.4838  1.1173 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  3.48799    0.12396  28.138   <2e-16 ***
+#   conc_log    -0.08928    0.06528  -1.368    0.178    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.8755 on 48 degrees of freedom
+# Multiple R-squared:  0.0375,	Adjusted R-squared:  0.01745 
+# F-statistic:  1.87 on 1 and 48 DF,  p-value: 0.1778
 
 
-# Surface Spi
-surface_Spi <- subset(surface_all, spec == "Spi")
+# log-log transformed - late linearity
+surface_Spi_wocon01 <- surface_Spi_wocon %>%
+  subset(conc != "0.1")
+Surf_Spi4 <- lm(value_log ~ conc_log, data = surface_Spi_wocon01)
+#view the output of the model
+summary(Surf_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = surface_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -3.5079 -0.2910  0.1891  0.5262  1.0935 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)   3.5515     0.2045  17.366   <2e-16 ***
+#   conc_log     -0.1065     0.0704  -1.513    0.137    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.9022 on 47 degrees of freedom
+# Multiple R-squared:  0.04645,	Adjusted R-squared:  0.02616 
+# F-statistic: 2.289 on 1 and 47 DF,  p-value: 0.137
+
+
+# Logarithmic
+plot(surface_Spi$conc, surface_Spi$value)
+#fit the model
+Surf_Spi5 <- lm(value ~ log(conc), data = surface_Spi_wocon)
+#view the output of the model
+summary(Surf_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = surface_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -38.853 -12.981  -0.937  10.853  46.519 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  39.7063     2.5795  15.393   <2e-16 ***
+#   log(conc)    -2.0837     0.9316  -2.237   0.0288 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 18.97 on 63 degrees of freedom
+# Multiple R-squared:  0.07358,	Adjusted R-squared:  0.05887 
+# F-statistic: 5.003 on 1 and 63 DF,  p-value: 0.02884
 
 # Exponential
 ks.test(surface_Spi$value, surface_Spi$conc, y = "pexp")
@@ -1387,31 +321,133 @@ ks.test(surface_Spi$value, surface_Spi$conc, y = "pexp")
 # alternative hypothesis: two-sided
 # no exp correlation
 
-# Logarithmic
-plot(surface_Spi$conc, surface_Spi$value)
-#fit the model
-model <- lm(surface_Spi_wocon$value ~ log(surface_Spi_wocon$conc))
+
+# AIC test
+models_Surf_Spi <- list(Surf_Spi2, Surf_Spi3, Surf_Spi4)
+model.names <- c('Surf_Spi2', 'Surf_Spi3', 'Surf_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Surf_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Surf_Spi3 3 133.08       0.00   0.55   0.55 -63.28
+# Surf_Spi4 3 133.46       0.39   0.45   1.00 -63.47
+# Surf_Spi2 3 164.82      31.74   0.00   1.00 -79.21
+
+
+
+## ---- 4.02. Volume -----------------------------------------------------------
+### --- 4.02.1. Pve ------------------------------------------------------------
+volume_Pve <- subset(volume, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Vol_Pve1 <- lm((value) ~ (conc), data = volume_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = surface_Spi_wocon$value ~ log(surface_Spi_wocon$conc))
+summary(Vol_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = volume_Pve)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -119.736   -6.760    5.168   18.011   55.468 
+#   Min      1Q  Median      3Q     Max 
+# -0.061735 -0.017387 -0.001495  0.017026  0.061432 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                   31.529      4.277   7.371 2.62e-10 ***
-#   log(surface_Spi_wocon$conc)   -2.419      1.517  -1.595    0.115    
+# (Intercept)  5.564e-02  3.059e-03  18.192  < 2e-16 ***
+#   conc        -2.472e-04  6.805e-05  -3.632 0.000471 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.02522 on 88 degrees of freedom
+# Multiple R-squared:  0.1304,	Adjusted R-squared:  0.1205 
+# F-statistic: 13.19 on 1 and 88 DF,  p-value: 0.0004715
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+volume_Pve_wocon <- volume_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Vol_Pve2 <- lm(value_log ~ conc_log, data = volume_Pve_wocon)
+#view the output of the model
+summary(Vol_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = volume_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.35913 -0.27576  0.07878  0.39896  1.02520 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -3.05480    0.07278 -41.972   <2e-16 ***
+#   conc_log    -0.05936    0.02645  -2.245   0.0281 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.5626 on 68 degrees of freedom
+# Multiple R-squared:  0.06898,	Adjusted R-squared:  0.05529 
+# F-statistic: 5.038 on 1 and 68 DF,  p-value: 0.02805
+
+# log-log transformed - early linearity
+volume_Pve_wocon100 <- volume_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Vol_Pve3 <- lm(value_log ~ conc_log, data = volume_Pve_wocon100)
+#view the output of the model
+summary(Vol_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = volume_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.41334 -0.28985  0.05222  0.36336  0.80837 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -3.00060    0.07292 -41.147   <2e-16 ***
+#   conc_log     0.01127    0.03879   0.291    0.773    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 33.13 on 70 degrees of freedom
-# Multiple R-squared:  0.03506,	Adjusted R-squared:  0.02127 
-# F-statistic: 2.543 on 1 and 70 DF,  p-value: 0.1153
+# Residual standard error: 0.5359 on 52 degrees of freedom
+# Multiple R-squared:  0.001621,	Adjusted R-squared:  -0.01758 
+# F-statistic: 0.08441 on 1 and 52 DF,  p-value: 0.7726
 
 
-## ---- 5.02. Volume ----------------------------------------------------------
-# Volume Pve
-volume_Pve <- subset(volume_all, spec == "Pve")
+# log-log transformed - late linearity
+volume_Pve_wocon01 <- volume_Pve_wocon %>%
+  subset(conc != "0.1")
+Vol_Pve4 <- lm(value_log ~ conc_log, data = volume_Pve_wocon01)
+#view the output of the model
+summary(Vol_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = volume_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.4695 -0.2628  0.1177  0.3899  1.0001 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -2.94446    0.12882 -22.858   <2e-16 ***
+#   conc_log    -0.09639    0.04455  -2.164   0.0353 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.5975 on 50 degrees of freedom
+# Multiple R-squared:  0.08561,	Adjusted R-squared:  0.06732 
+# F-statistic: 4.681 on 1 and 50 DF,  p-value: 0.0353
+
+# Logarithmic
+plot(volume_Pve$conc, volume_Pve$value)
+#fit the model
+Vol_Pve5 <- lm(value ~ conc_log, data = volume_Pve_wocon)
+#view the output of the model
+summary(Vol_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = volume_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -0.041515 -0.016642 -0.003445  0.015184  0.066343 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  0.053623   0.003276  16.370   <2e-16 ***
+#   conc_log    -0.002329   0.001190  -1.957   0.0545 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.02532 on 68 degrees of freedom
+# Multiple R-squared:  0.0533,	Adjusted R-squared:  0.03937 
+# F-statistic: 3.828 on 1 and 68 DF,  p-value: 0.05451
 
 # Exponential
 ks.test(volume_Pve$value, volume_Pve$conc, y = "pexp")
@@ -1422,30 +458,132 @@ ks.test(volume_Pve$value, volume_Pve$conc, y = "pexp")
 # no exp correlation
 
 
-# Logarithmic
-plot(volume_Pve$conc, volume_Pve$value)
-#fit the model
-model <- lm(volume_Pve_wocon$value ~ log(volume_Pve_wocon$conc))
+# AIC test
+models_Vol_Pve <- list(Vol_Pve2, Vol_Pve3, Vol_Pve4)
+model.names <- c('Vol_Pve2', 'Vol_Pve3', 'Vol_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Vol_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Vol_Pve3 3 107.16       0.00   0.99   0.99 -50.33
+# Vol_Pve4 3 117.30      10.15   0.01   1.00 -55.40
+# Vol_Pve2 3 146.47      39.31   0.00   1.00 -70.05
+
+
+### --- 4.02.2. Spi ------------------------------------------------------------
+# volume Spi
+volume_Spi <- subset(volume, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Vol_Spi1 <- lm((value) ~ (conc), data = volume_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = volume_Pve_wocon$value ~ log(volume_Pve_wocon$conc))
+summary(Vol_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = volume_Spi)
 # Residuals:
-#   Min        1Q    Median        3Q       Max 
-# -0.041033 -0.017318 -0.001417  0.016130  0.068272 
+#        Min       1Q   Median       3Q      Max 
+# -0.054205 -0.017964 -0.000673  0.012412  0.094862 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                 0.053140   0.003348  15.872   <2e-16 ***
-#   log(volume_Pve_wocon$conc) -0.002957   0.001187  -2.491   0.0151 *  
+# (Intercept)  5.433e-02  3.867e-03  14.051   <2e-16 ***
+#   conc        -2.051e-04  8.603e-05  -2.385   0.0192 *  
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 0.02593 on 70 degrees of freedom
-# Multiple R-squared:  0.08142,	Adjusted R-squared:  0.0683 
-# F-statistic: 6.205 on 1 and 70 DF,  p-value: 0.01512
+# Residual standard error: 0.03189 on 88 degrees of freedom
+# Multiple R-squared:  0.06069,	Adjusted R-squared:  0.05002 
+# F-statistic: 5.686 on 1 and 88 DF,  p-value: 0.01925
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+volume_Spi_wocon <- volume_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Vol_Spi2 <- lm(value_log ~ conc_log, data = volume_Spi_wocon)
+#view the output of the model
+summary(Vol_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = volume_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -3.3284 -0.2050  0.1471  0.4709  1.4095 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -3.19925    0.12435 -25.728   <2e-16 ***
+#   conc_log    -0.05500    0.04431  -1.241    0.219    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.9542 on 68 degrees of freedom
+# Multiple R-squared:  0.02216,	Adjusted R-squared:  0.007776 
+# F-statistic: 1.541 on 1 and 68 DF,  p-value: 0.2188
+
+# log-log transformed - early linearity
+volume_Spi_wocon100 <- volume_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Vol_Spi3 <- lm(value_log ~ conc_log, data = volume_Spi_wocon100)
+#view the output of the model
+summary(Vol_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = volume_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -3.1756 -0.2460  0.1798  0.4536  1.1305 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -3.12067    0.12180 -25.621   <2e-16 ***
+#   conc_log     0.04550    0.06418   0.709    0.482    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.8867 on 51 degrees of freedom
+# Multiple R-squared:  0.009757,	Adjusted R-squared:  -0.00966 
+# F-statistic: 0.5025 on 1 and 51 DF,  p-value: 0.4816
 
 
-# Volume Spi
-volume_Spi <- subset(volume_all, spec == "Spi")
+# log-log transformed - late linearity
+volume_Spi_wocon01 <- volume_Spi_wocon %>%
+  subset(conc != "0.1")
+Vol_Spi4 <- lm(value_log ~ conc_log, data = volume_Spi_wocon01)
+#view the output of the model
+summary(Vol_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = volume_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -3.01816 -0.24918  0.07437  0.47604  1.35220 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -2.96661    0.19823 -14.965   <2e-16 ***
+#   conc_log    -0.13114    0.06694  -1.959   0.0557 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.8988 on 50 degrees of freedom
+# Multiple R-squared:  0.07128,	Adjusted R-squared:  0.0527 
+# F-statistic: 3.837 on 1 and 50 DF,  p-value: 0.05571
+
+
+# Logarithmic
+plot(volume_Spi$conc, volume_Spi$value)
+#fit the model
+Vol_Spi5 <- lm(value ~ log(conc), data = volume_Spi_wocon)
+#view the output of the model
+summary(Vol_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = volume_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -0.057253 -0.019270 -0.005894  0.010370  0.098329 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  0.053862   0.004202  12.819   <2e-16 ***
+#   log(conc)   -0.002194   0.001497  -1.465    0.147    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.03224 on 68 degrees of freedom
+# Multiple R-squared:  0.03061,	Adjusted R-squared:  0.01635 
+# F-statistic: 2.147 on 1 and 68 DF,  p-value: 0.1475
 
 # Exponential
 ks.test(volume_Spi$value, volume_Spi$conc, y = "pexp")
@@ -1453,33 +591,135 @@ ks.test(volume_Spi$value, volume_Spi$conc, y = "pexp")
 # data:  volume_Spi$value
 # D = 0.96667, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(volume_Spi$conc, volume_Spi$value)
-#fit the model
-model <- lm(volume_Spi_wocon$value ~ log(volume_Spi_wocon$conc))
+
+# AIC test
+models_Vol_Spi <- list(Vol_Spi2, Vol_Spi3, Vol_Spi4)
+model.names <- c('Vol_Spi2', 'Vol_Spi3', 'Vol_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Vol_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Vol_Spi3 3 133.08       0.00   0.55   0.55 -63.28
+# Vol_Spi4 3 133.46       0.39   0.45   1.00 -63.47
+# Vol_Spi2 3 164.82      31.74   0.00   1.00 -79.21
+
+
+
+## ---- 4.03. Calcification ----------------------------------------------------
+### --- 4.03.1. Pve ------------------------------------------------------------
+calcification_Pve <- subset(calcification, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Calc_Pve1 <- lm((value) ~ (conc), data = calcification_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = volume_Spi_wocon$value ~ log(volume_Spi_wocon$conc))
+summary(Calc_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = calcification_Pve)
 # Residuals:
-#   Min        1Q    Median        3Q       Max 
-# -0.056556 -0.018098 -0.005853  0.011293  0.099932 
+#   Min      1Q  Median      3Q     Max 
+# -75.608 -26.373  -0.341  23.189  79.265 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                 0.052712   0.004239   12.43   <2e-16 ***
-#   log(volume_Spi_wocon$conc) -0.002390   0.001503   -1.59    0.116    
+# (Intercept)  87.5865     4.1396  21.158   <2e-16 ***
+#   conc         -0.1886     0.0921  -2.048   0.0436 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 34.14 on 88 degrees of freedom
+# Multiple R-squared:  0.04548,	Adjusted R-squared:  0.03464 
+# F-statistic: 4.193 on 1 and 88 DF,  p-value: 0.04356
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+calcification_Pve_wocon <- calcification_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Calc_Pve2 <- lm(value_log ~ conc_log, data = calcification_Pve_wocon)
+#view the output of the model
+summary(Calc_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = calcification_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.5056 -0.3402  0.1258  0.3461  0.8372 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.36388    0.06585  66.270   <2e-16 ***
+#   conc_log    -0.04142    0.02335  -1.774   0.0804 .  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 0.03284 on 70 degrees of freedom
-# Multiple R-squared:  0.03486,	Adjusted R-squared:  0.02107 
-# F-statistic: 2.528 on 1 and 70 DF,  p-value: 0.1163
+# Residual standard error: 0.5101 on 70 degrees of freedom
+# Multiple R-squared:  0.04302,	Adjusted R-squared:  0.02935 
+# F-statistic: 3.147 on 1 and 70 DF,  p-value: 0.08042
+
+# log-log transformed - early linearity
+calcification_Pve_wocon100 <- calcification_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Calc_Pve3 <- lm(value_log ~ conc_log, data = calcification_Pve_wocon100)
+#view the output of the model
+summary(Calc_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = calcification_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.65768 -0.24633  0.04884  0.31059  0.68515 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.401900   0.061093   72.05   <2e-16 ***
+#   conc_log    0.008116   0.032496    0.25    0.804    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4489 on 52 degrees of freedom
+# Multiple R-squared:  0.001198,	Adjusted R-squared:  -0.01801 
+# F-statistic: 0.06237 on 1 and 52 DF,  p-value: 0.8038
 
 
-## ---- 5.03. Calcification ----------------------------------------------------
-# calcification Pve
-calcification_Pve <- subset(calcification_all, spec == "Pve")
+# log-log transformed - late linearity
+calcification_Pve_wocon01 <- calcification_Pve_wocon %>%
+  subset(conc != "0.1")
+Calc_Pve4 <- lm(value_log ~ conc_log, data = calcification_Pve_wocon01)
+#view the output of the model
+summary(Calc_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = calcification_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.5321 -0.3905  0.1490  0.4168  0.8108 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.46974    0.11887  37.602   <2e-16 ***
+#   conc_log    -0.07590    0.03999  -1.898   0.0632 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.5525 on 52 degrees of freedom
+# Multiple R-squared:  0.0648,	Adjusted R-squared:  0.04681 
+# F-statistic: 3.603 on 1 and 52 DF,  p-value: 0.06324
+
+# Logarithmic
+plot(calcification_Pve$conc, calcification_Pve$value)
+#fit the model
+Calc_Pve5 <- lm(value ~ conc_log, data = calcification_Pve_wocon)
+#view the output of the model
+summary(Calc_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = calcification_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -65.488 -29.306   1.332  22.433  83.632 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)   85.970      4.504  19.086   <2e-16 ***
+#   conc_log      -2.013      1.597  -1.261    0.212    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 34.89 on 70 degrees of freedom
+# Multiple R-squared:  0.0222,	Adjusted R-squared:  0.008227 
+# F-statistic: 1.589 on 1 and 70 DF,  p-value: 0.2117
 
 # Exponential
 ks.test(calcification_Pve$value, calcification_Pve$conc, y = "pexp")
@@ -1487,32 +727,135 @@ ks.test(calcification_Pve$value, calcification_Pve$conc, y = "pexp")
 # data:  calcification_Pve$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(calcification_Pve$conc, calcification_Pve$value)
-#fit the model
-model <- lm(calcification_Pve_wocon$value ~ log(calcification_Pve_wocon$conc))
+
+# AIC test
+models_Calc_Pve <- list(Calc_Pve2, Calc_Pve3, Calc_Pve4)
+model.names <- c('Calc_Pve2', 'Calc_Pve3', 'Calc_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Calc_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Calc_Pve3 3  71.19       0.00      1      1 -32.36
+# Calc_Pve4 3  93.60      22.41      0      1 -43.56
+# Calc_Pve2 3 111.71      40.52      0      1 -52.68
+
+
+### --- 4.03.2. Spi ------------------------------------------------------------
+# calcification Spi
+calcification_Spi <- subset(calcification, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Calc_Spi1 <- lm((value) ~ (conc), data = calcification_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = calcification_Pve_wocon$value ~ log(calcification_Pve_wocon$conc))
+summary(Calc_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = calcification_Spi)
 # Residuals:
-#   Min      1Q  Median      3Q     Max 
-# -65.488 -29.306   1.332  22.433  83.632 
+#        Min       1Q   Median       3Q      Max 
+# -96.485 -21.093  -1.005  20.179 111.680 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                         85.970      4.504  19.086   <2e-16 ***
-#   log(calcification_Pve_wocon$conc)   -2.013      1.597  -1.261    0.212    
+# (Intercept)  91.5509     5.5799  16.407   <2e-16 ***
+#   conc         -0.2961     0.1241  -2.385   0.0192 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 46.01 on 88 degrees of freedom
+# Multiple R-squared:  0.06071,	Adjusted R-squared:  0.05003 
+# F-statistic: 5.688 on 1 and 88 DF,  p-value: 0.01923
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+calcification_Spi_wocon <- calcification_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Calc_Spi2 <- lm(value_log ~ conc_log, data = calcification_Spi_wocon)
+#view the output of the model
+summary(Calc_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = calcification_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -4.0991 -0.0803  0.1331  0.4805  1.1738 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.32771    0.11619  37.246   <2e-16 ***
+#   conc_log    -0.08764    0.04101  -2.137   0.0362 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.8724 on 68 degrees of freedom
+# Multiple R-squared:  0.06295,	Adjusted R-squared:  0.04917 
+# F-statistic: 4.568 on 1 and 68 DF,  p-value: 0.03618
+
+# log-log transformed - early linearity
+calcification_Spi_wocon100 <- calcification_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Calc_Spi3 <- lm(value_log ~ conc_log, data = calcification_Spi_wocon100)
+#view the output of the model
+summary(Calc_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = calcification_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -4.1379 -0.0760  0.0860  0.3626  1.0031 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.36649    0.11326   38.55   <2e-16 ***
+#   conc_log    -0.03039    0.06083   -0.50     0.62    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 34.89 on 70 degrees of freedom
-# Multiple R-squared:  0.0222,	Adjusted R-squared:  0.008227 
-# F-statistic: 1.589 on 1 and 70 DF,  p-value: 0.2117
+# Residual standard error: 0.8158 on 50 degrees of freedom
+# Multiple R-squared:  0.004966,	Adjusted R-squared:  -0.01493 
+# F-statistic: 0.2495 on 1 and 50 DF,  p-value: 0.6196
 
 
-# calcification Spi
-calcification_Spi <- subset(calcification_all, spec == "Spi")
+# log-log transformed - late linearity
+calcification_Spi_wocon01 <- calcification_Spi_wocon %>%
+  subset(conc != "0.1")
+Calc_Spi4 <- lm(value_log ~ conc_log, data = calcification_Spi_wocon01)
+#view the output of the model
+summary(Calc_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = calcification_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -4.1010 -0.0676  0.1825  0.5080  1.1733 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.32966    0.20722  20.894   <2e-16 ***
+#   conc_log    -0.08828    0.06971  -1.266    0.211    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.9631 on 52 degrees of freedom
+# Multiple R-squared:  0.02992,	Adjusted R-squared:  0.01126 
+# F-statistic: 1.604 on 1 and 52 DF,  p-value: 0.211
+
+
+# Logarithmic
+plot(calcification_Spi$conc, calcification_Spi$value)
+#fit the model
+Calc_Spi5 <- lm(value ~ log(conc), data = calcification_Spi_wocon)
+#view the output of the model
+summary(Calc_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = calcification_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -91.305 -22.407  -7.058  20.606 119.015 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)   92.562      6.042  15.320   <2e-16 ***
+#   log(conc)     -4.911      2.132  -2.303   0.0243 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 45.37 on 68 degrees of freedom
+# Multiple R-squared:  0.07235,	Adjusted R-squared:  0.05871 
+# F-statistic: 5.304 on 1 and 68 DF,  p-value: 0.02435
 
 # Exponential
 ks.test(calcification_Spi$value, calcification_Spi$conc, y = "pexp")
@@ -1520,234 +863,949 @@ ks.test(calcification_Spi$value, calcification_Spi$conc, y = "pexp")
 # data:  calcification_Spi$value
 # D = 0.96667, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(calcification_Spi$conc, calcification_Spi$value)
-#fit the model
-model <- lm(calcification_Spi_wocon$value ~ log(calcification_Spi_wocon$conc))
+
+# AIC test
+models_Calc_Spi <- list(Calc_Spi2, Calc_Spi3, Calc_Spi4)
+model.names <- c('Calc_Spi2', 'Calc_Spi3', 'Calc_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Calc_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Calc_Spi3 3 130.85       0.00      1      1 -62.18
+# Calc_Spi4 3 153.63      22.77      0      1 -73.57
+# Calc_Spi2 3 183.88      53.02      0      1 -88.76
+
+
+## ---- 4.04. Necrosis ---------------------------------------------------------
+### --- 4.04.1. Pve ------------------------------------------------------------
+necrosis_Pve <- subset(necrosis, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Necro_Pve1 <- lm((value) ~ (conc), data = necrosis_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = calcification_Spi_wocon$value ~ log(calcification_Spi_wocon$conc))
+summary(Necro_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = necrosis_Pve)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -100.441  -22.182   -4.081   20.893  120.214 
+#   Min      1Q  Median      3Q     Max 
+# -2.698 -1.463 -1.339 -1.326 39.334 
 # Coefficients:
-#   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                         87.766      6.199  14.157   <2e-16 ***
-#   log(calcification_Spi_wocon$conc)   -3.349      2.198  -1.523    0.132    
+#   Estimate Std. Error t value Pr(>|t|)  
+# (Intercept)  1.32557    0.77966   1.700   0.0926 .
+# conc         0.01372    0.01735   0.791   0.4310  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 48.02 on 70 degrees of freedom
-# Multiple R-squared:  0.03208,	Adjusted R-squared:  0.01826 
-# F-statistic:  2.32 on 1 and 70 DF,  p-value: 0.1322
+# Residual standard error: 6.429 on 88 degrees of freedom
+# Multiple R-squared:  0.007062,	Adjusted R-squared:  -0.004221 
+# F-statistic: 0.6259 on 1 and 88 DF,  p-value: 0.431
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+necrosis_Pve_wocon <- necrosis_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "-Inf")
+Necro_Pve2 <- lm(value_log ~ conc_log, data = necrosis_Pve_wocon)
+#view the output of the model
+summary(Necro_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = necrosis_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.78222 -0.70723 -0.09592  0.85838  1.75222 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)  
+# (Intercept)  1.91496    0.59758   3.205   0.0185 *
+#   conc_log     0.01547    0.19618   0.079   0.9397  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 1.392 on 6 degrees of freedom
+# Multiple R-squared:  0.001036,	Adjusted R-squared:  -0.1655 
+# F-statistic: 0.00622 on 1 and 6 DF,  p-value: 0.9397
+
+# log-log transformed - early linearity
+necrosis_Pve_wocon100 <- necrosis_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Necro_Pve3 <- lm(value_log ~ conc_log, data = necrosis_Pve_wocon100)
+#view the output of the model
+summary(Necro_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = necrosis_Pve_wocon100)
+# Residuals:
+#      1       2       3       4       5 
+# -0.0461  0.9978  0.9978 -0.3316 -1.6179 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)  
+# (Intercept)   2.0079     0.5610   3.579   0.0373 *
+#   conc_log      0.2173     0.3852   0.564   0.6122  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 1.254 on 3 degrees of freedom
+# Multiple R-squared:  0.09587,	Adjusted R-squared:  -0.2055 
+# F-statistic: 0.3181 on 1 and 3 DF,  p-value: 0.6122
 
 
-
-## ---- 5.04. Necrosis ---------------------------------------------------------
-# necrosis Pve
-necrosis_Pve <- subset(necrosis_all, spec == "Pve")
-
-# Exponential
-ks.test(necrosis_Pve$value, necrosis_Pve$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  necrosis_Pve$value
-# D = 0.96667, p-value < 2.2e-16
-# alternative hypothesis: two-sided
-# no correlation
+# log-log transformed - late linearity
+necrosis_Pve_wocon01 <- necrosis_Pve_wocon %>%
+  subset(conc != "0.1")
+Necro_Pve4 <- lm(value_log ~ conc_log, data = necrosis_Pve_wocon01)
+#view the output of the model
+summary(Necro_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = necrosis_Pve_wocon01)
+# Residuals:
+#         1        2        3        4        5        7        8 
+# -1.90147 -0.55391  0.34495  1.64482  1.63297  0.05946 -1.22682 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)
+# (Intercept)   1.6168     0.8223   1.966    0.106
+# conc_log      0.1061     0.2620   0.405    0.702
+# Residual standard error: 1.478 on 5 degrees of freedom
+# Multiple R-squared:  0.03175,	Adjusted R-squared:  -0.1619 
+# F-statistic: 0.1639 on 1 and 5 DF,  p-value: 0.7023
 
 # Logarithmic
 plot(necrosis_Pve$conc, necrosis_Pve$value)
 #fit the model
-model <- lm(necrosis_Pve_wocon$value ~ log(necrosis_Pve_wocon$conc))
+Necro_Pve5 <- lm(value ~ conc_log, data = necrosis_Pve_wocon)
 #view the output of the model
-summary(model)
+summary(Necro_Pve5)
 # OUTPUT: Call:
-# lm(formula = necrosis_Pve_wocon$value ~ log(necrosis_Pve_wocon$conc))
+# lm(formula = value ~ log(conc), data = necrosis_Pve_wocon)
 # Residuals:
-#   Min      1Q  Median      3Q     Max 
+#   Min     1Q Median     3Q    Max 
 # -16.999 -10.188  -4.330   8.872  23.807 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)
-# (Intercept)                    10.559      6.894   1.532    0.177
-# log(necrosis_Pve_wocon$conc)    1.665      2.263   0.735    0.490
+# (Intercept)   10.559      6.894   1.532    0.177
+# conc_log       1.665      2.263   0.735    0.490
 # Residual standard error: 16.06 on 6 degrees of freedom
 # Multiple R-squared:  0.0827,	Adjusted R-squared:  -0.07018 
 # F-statistic: 0.5409 on 1 and 6 DF,  p-value: 0.4898
 
-
-# necrosis Spi
-necrosis_Spi <- subset(necrosis, spec == "Spi")
-
 # Exponential
-ks.test(necrosis_Spi$value, necrosis_Spi$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  necrosis_Spi$value
-# D = 0.96667, p-value < 2.2e-16
+ks.test(necrosis_Pve$value, necrosis_Pve$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  necrosis_Pve$value
+# D = 0.96667, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
+
+
+# AIC test
+models_Necro_Pve <- list(Necro_Pve2, Necro_Pve3, Necro_Pve4)
+model.names <- c('Necro_Pve2', 'Necro_Pve3', 'Necro_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Necro_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Necro_Pve4 3 36.98       0.00   0.58   0.58 -11.49
+# Necro_Pve2 3 37.70       0.72   0.40   0.98 -12.85
+# Necro_Pve3 3 43.90       6.92   0.02   1.00  -6.95
+
+
+### --- 4.04.2. Spi ------------------------------------------------------------
+# necrosis Spi
+necrosis_Spi <- subset(necrosis, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Necro_Spi1 <- lm((value) ~ (conc), data = necrosis_Spi)
+#view the output of the model
+summary(Necro_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = necrosis_Spi)
+# Residuals:
+#        Min       1Q   Median       3Q      Max 
+# -8.963 -3.677 -3.096 -3.090 64.589 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)  
+# (Intercept)  3.09011    1.69815   1.820   0.0722 .
+# conc         0.05873    0.03778   1.555   0.1237  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 14 on 88 degrees of freedom
+# Multiple R-squared:  0.02673,	Adjusted R-squared:  0.01567 
+# F-statistic: 2.416 on 1 and 88 DF,  p-value: 0.1237
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+necrosis_Spi_wocon <- necrosis_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "-Inf")
+Necro_Spi2 <- lm(value_log ~ conc_log, data = necrosis_Spi_wocon)
+#view the output of the model
+summary(Necro_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = necrosis_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -2.3750 -1.1033 -0.1282  1.5577  2.1512 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  2.21606    0.49383   4.488 0.000511 ***
+#   conc_log    -0.01504    0.15408  -0.098 0.923613    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 1.604 on 14 degrees of freedom
+# Multiple R-squared:  0.0006803,	Adjusted R-squared:  -0.0707 
+# F-statistic: 0.009531 on 1 and 14 DF,  p-value: 0.9236
+
+# log-log transformed - early linearity
+necrosis_Spi_wocon100 <- necrosis_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Necro_Spi3 <- lm(value_log ~ conc_log, data = necrosis_Spi_wocon100)
+#view the output of the model
+summary(Necro_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = necrosis_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -2.8921 -0.9047  0.1045  0.9349  2.0776 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)   
+# (Intercept)   2.0314     0.4981   4.078  0.00354 **
+#   conc_log     -0.3198     0.2586  -1.237  0.25122   
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 1.564 on 8 degrees of freedom
+# Multiple R-squared:  0.1605,	Adjusted R-squared:  0.0556 
+# F-statistic:  1.53 on 1 and 8 DF,  p-value: 0.2512
+
+
+# log-log transformed - late linearity
+necrosis_Spi_wocon01 <- necrosis_Spi_wocon %>%
+  subset(conc != "0.1")
+Necro_Spi4 <- lm(value_log ~ conc_log, data = necrosis_Spi_wocon01)
+#view the output of the model
+summary(Necro_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = necrosis_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -2.2388 -1.0424 -0.1753  1.5526  2.1479 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)  
+# (Intercept)  2.20564    0.78979   2.793   0.0175 *
+#   conc_log    -0.01206    0.23372  -0.052   0.9598  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 1.551 on 11 degrees of freedom
+# Multiple R-squared:  0.0002419,	Adjusted R-squared:  -0.09065 
+# F-statistic: 0.002662 on 1 and 11 DF,  p-value: 0.9598
+
 
 # Logarithmic
 plot(necrosis_Spi$conc, necrosis_Spi$value)
 #fit the model
-model <- lm(necrosis_Spi_wocon$value ~ log(necrosis_Spi_wocon$conc))
+Necro_Spi5 <- lm(value ~ log(conc), data = necrosis_Spi_wocon)
 #view the output of the model
-summary(model)
+summary(Necro_Spi5)
 # OUTPUT: Call:
-# lm(formula = necrosis_Spi_wocon$value ~ log(necrosis_Spi_wocon$conc))
+# lm(formula = value ~ log(conc), data = necrosis_Spi_wocon)
 # Residuals:
 #   Min     1Q Median     3Q    Max 
-# -6.385 -5.373 -4.362 -3.350 67.167 
+# -22.66 -17.97 -14.25  19.80  52.72 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)  
-# (Intercept)                    4.3617     1.9295   2.260   0.0269 *
-#   log(necrosis_Spi_wocon$conc)   0.4393     0.6842   0.642   0.5230  
+# (Intercept)  22.6381     8.1222   2.787   0.0145 *
+#   log(conc)    -0.3928     2.5342  -0.155   0.8790  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# 
-# Residual standard error: 14.95 on 70 degrees of freedom
-# Multiple R-squared:  0.005854,	Adjusted R-squared:  -0.008348 
-# F-statistic: 0.4122 on 1 and 70 DF,  p-value: 0.523
-
-
-## ---- 5.05. Polypactivity ----------------------------------------------------
-# polypactivity Pve
-polypactivity_Pve <- subset(polypactivity, spec == "Pve")
+# Residual standard error: 26.38 on 14 degrees of freedom
+# Multiple R-squared:  0.001713,	Adjusted R-squared:  -0.06959 
+# F-statistic: 0.02402 on 1 and 14 DF,  p-value: 0.879
 
 # Exponential
-ks.test(polypactivity_Pve$value, polypactivity_Pve$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  polypactivity_Spi$value
-# D = 0.98889, p-value < 2.2e-16
+ks.test(necrosis_Spi$value, necrosis_Spi$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  necrosis_Spi$value
+# D = 0.96667, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
+
+
+# AIC test
+models_Necro_Spi <- list(Necro_Spi2, Necro_Spi3, Necro_Spi4)
+model.names <- c('Necro_Spi2', 'Necro_Spi3', 'Necro_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Necro_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Necro_Spi3 3 45.09       0.00   0.99   0.99 -17.55
+# Necro_Spi4 3 54.80       9.71   0.01   1.00 -23.07
+# Necro_Spi2 3 66.39      21.30   0.00   1.00 -29.19
+
+
+
+## ---- 4.05. Polyp activity ---------------------------------------------------
+### --- 4.05.1. Pve ------------------------------------------------------------
+polypactivity_Pve <- subset(polypactivity, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Polyp_Pve1 <- lm((value) ~ (conc), data = polypactivity_Pve)
+#view the output of the model
+summary(Polyp_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = polypactivity_Pve)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.43369 -0.09729  0.03164  0.11600  0.35637 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  0.8486369  0.0179668  47.233  < 2e-16 ***
+#   conc        -0.0026056  0.0003997  -6.518 4.31e-09 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.1482 on 88 degrees of freedom
+# Multiple R-squared:  0.3256,	Adjusted R-squared:  0.3179 
+# F-statistic: 42.49 on 1 and 88 DF,  p-value: 4.313e-09
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+polypactivity_Pve_wocon <- polypactivity_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Polyp_Pve2 <- lm(value_log ~ conc_log, data = polypactivity_Pve_wocon)
+#view the output of the model
+summary(Polyp_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = polypactivity_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.27252 -0.06855  0.03952  0.13059  0.46208 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.22185    0.03310  -6.703 4.33e-09 ***
+#   conc_log    -0.06458    0.01174  -5.502 5.77e-07 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2564 on 70 degrees of freedom
+# Multiple R-squared:  0.3019,	Adjusted R-squared:  0.292 
+# F-statistic: 30.28 on 1 and 70 DF,  p-value: 5.772e-07
+
+# log-log transformed - early linearity
+polypactivity_Pve_wocon100 <- polypactivity_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Polyp_Pve3 <- lm(value_log ~ conc_log, data = polypactivity_Pve_wocon100)
+#view the output of the model
+summary(Polyp_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = polypactivity_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.65878 -0.06273  0.01831  0.11558  0.28569 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.20063    0.02506  -8.006 1.24e-10 ***
+#   conc_log    -0.03694    0.01333  -2.771  0.00773 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.1841 on 52 degrees of freedom
+# Multiple R-squared:  0.1287,	Adjusted R-squared:  0.1119 
+# F-statistic:  7.68 on 1 and 52 DF,  p-value: 0.007728
+
+
+# log-log transformed - late linearity
+polypactivity_Pve_wocon01 <- polypactivity_Pve_wocon %>%
+  subset(conc != "0.1")
+Polyp_Pve4 <- lm(value_log ~ conc_log, data = polypactivity_Pve_wocon01)
+#view the output of the model
+summary(Polyp_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = polypactivity_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.25297 -0.06857  0.00042  0.20571  0.48163 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.18274    0.06122  -2.985  0.00432 ** 
+#   conc_log    -0.07731    0.02060  -3.754  0.00044 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2845 on 52 degrees of freedom
+# Multiple R-squared:  0.2132,	Adjusted R-squared:  0.1981 
+# F-statistic: 14.09 on 1 and 52 DF,  p-value: 0.0004404
 
 # Logarithmic
 plot(polypactivity_Pve$conc, polypactivity_Pve$value)
 #fit the model
-model <- lm(polypactivity_Pve_wocon$value ~ log(polypactivity_Pve_wocon$conc))
+Polyp_Pve5 <- lm(value ~ conc_log, data = polypactivity_Pve_wocon)
 #view the output of the model
-summary(model)
+summary(Polyp_Pve5)
 # OUTPUT: Call:
-# lm(formula = polypactivity_Pve_wocon$value ~ log(polypactivity_Pve_wocon$conc))
+# lm(formula = value ~ log(conc), data = polypactivity_Pve_wocon)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
+#   Min     1Q Median     3Q    Max 
 # -0.45895 -0.07006  0.01204  0.08480  0.31883 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                        0.821296   0.019306  42.542  < 2e-16 ***
-#   log(polypactivity_Pve_wocon$conc) -0.042491   0.006846  -6.207 3.37e-08 ***
+# (Intercept)  0.821296   0.019306  42.542  < 2e-16 ***
+#   conc_log    -0.042491   0.006846  -6.207 3.37e-08 ***
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # Residual standard error: 0.1495 on 70 degrees of freedom
 # Multiple R-squared:  0.355,	Adjusted R-squared:  0.3458 
 # F-statistic: 38.53 on 1 and 70 DF,  p-value: 3.367e-08
 
-
-# polypactivity Spi
-polypactivity_Spi <- subset(polypactivity_all, spec == "Spi")
-
 # Exponential
-ks.test(polypactivity_Spi$value, polypactivity_Spi$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  polypactivity_Spi$value
-# D = 0.98889, p-value < 2.2e-16
+ks.test(polypactivity_Pve$value, polypactivity_Pve$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  polypactivity_Pve$value
+# D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
+
+
+# AIC test
+models_Polyp_Pve <- list(Polyp_Pve2, Polyp_Pve3, Polyp_Pve4)
+model.names <- c('Polyp_Pve2', 'Polyp_Pve3', 'Polyp_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Polyp_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Polyp_Pve3 3 -25.05       0.00      1      1 15.77
+# Polyp_Pve2 3  12.65      37.70      0      1 -3.15
+# Polyp_Pve4 3  21.94      46.99      0      1 -7.73
+
+
+### --- 4.05.2. Spi ------------------------------------------------------------
+# polypactivity Spi
+polypactivity_Spi <- subset(polypactivity, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Polyp_Spi1 <- lm((value) ~ (conc), data = polypactivity_Spi)
+#view the output of the model
+summary(Polyp_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = polypactivity_Spi)
+# Residuals:
+#        Min       1Q   Median       3Q      Max 
+# -0.41886 -0.19799 -0.00455  0.17405  0.50738 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  0.6425804  0.0275045  23.363   <2e-16 ***
+#   conc        -0.0014996  0.0006119  -2.451   0.0162 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2268 on 88 degrees of freedom
+# Multiple R-squared:  0.06388,	Adjusted R-squared:  0.05325 
+# F-statistic: 6.005 on 1 and 88 DF,  p-value: 0.01624
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+polypactivity_Spi_wocon <- polypactivity_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Polyp_Spi2 <- lm(value_log ~ conc_log, data = polypactivity_Spi_wocon)
+#view the output of the model
+summary(Polyp_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = polypactivity_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.96980 -0.22303  0.02622  0.28296  0.59843 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.53428    0.05227 -10.222 4.85e-14 ***
+#   conc_log    -0.02786    0.02780  -1.002    0.321    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3841 on 52 degrees of freedom
+# Multiple R-squared:  0.01895,	Adjusted R-squared:  8.268e-05 
+# F-statistic: 1.004 on 1 and 52 DF,  p-value: 0.3209
+
+# log-log transformed - early linearity
+polypactivity_Spi_wocon100 <- polypactivity_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Polyp_Spi3 <- lm(value_log ~ conc_log, data = polypactivity_Spi_wocon100)
+#view the output of the model
+summary(Polyp_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = polypactivity_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.96980 -0.22303  0.02622  0.28296  0.59843 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.53428    0.05227 -10.222 4.85e-14 ***
+#   conc_log    -0.02786    0.02780  -1.002    0.321    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3841 on 52 degrees of freedom
+# Multiple R-squared:  0.01895,	Adjusted R-squared:  8.268e-05 
+# F-statistic: 1.004 on 1 and 52 DF,  p-value: 0.3209
+
+
+# log-log transformed - late linearity
+polypactivity_Spi_wocon01 <- polypactivity_Spi_wocon %>%
+  subset(conc != "0.1")
+Polyp_Spi4 <- lm(value_log ~ conc_log, data = polypactivity_Spi_wocon01)
+#view the output of the model
+summary(Polyp_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = polypactivity_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.3496 -0.3962  0.1465  0.3949  0.8476 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.47190    0.10733  -4.397 5.45e-05 ***
+#   conc_log    -0.08159    0.03611  -2.260   0.0281 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4988 on 52 degrees of freedom
+# Multiple R-squared:  0.08942,	Adjusted R-squared:  0.0719 
+# F-statistic: 5.106 on 1 and 52 DF,  p-value: 0.02806
+
 
 # Logarithmic
 plot(polypactivity_Spi$conc, polypactivity_Spi$value)
 #fit the model
-model <- lm(polypactivity_Spi_wocon$value ~ log(polypactivity_Spi_wocon$conc))
+Polyp_Spi5 <- lm(value ~ log(conc), data = polypactivity_Spi_wocon)
 #view the output of the model
-summary(model)
+summary(Polyp_Spi5)
 # OUTPUT: Call:
-# lm(formula = polypactivity_Spi_wocon$value ~ log(polypactivity_Spi_wocon$conc))
+# lm(formula = value ~ log(conc), data = polypactivity_Spi_wocon)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
+#   Min     1Q Median     3Q    Max 
 # -0.40710 -0.19506 -0.01327  0.15833  0.48179 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                        0.61944    0.02953  20.977   <2e-16 ***
-#   log(polypactivity_Spi_wocon$conc) -0.02198    0.01047  -2.099   0.0394 *  
+# (Intercept)  0.61944    0.02953  20.977   <2e-16 ***
+#   log(conc)   -0.02198    0.01047  -2.099   0.0394 *  
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # Residual standard error: 0.2287 on 70 degrees of freedom
 # Multiple R-squared:  0.05923,	Adjusted R-squared:  0.04579 
 # F-statistic: 4.407 on 1 and 70 DF,  p-value: 0.03939
 
-
-## ---- 5.06. YII --------------------------------------------------------------
-# YII Pve
-YII_Pve <- subset(YII_all, spec == "Pve")
-
 # Exponential
-ks.test(YII_Pve$value, YII_Pve$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  YII_Pve$value
+ks.test(polypactivity_Spi$value, polypactivity_Spi$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  polypactivity_Spi$value
 # D = 0.98889, p-value < 2.2e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
+
+
+# AIC test
+models_Polyp_Spi <- list(Polyp_Spi2, Polyp_Spi3, Polyp_Spi4)
+model.names <- c('Polyp_Spi2', 'Polyp_Spi3', 'Polyp_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Polyp_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Polyp_Spi3 3 54.35       0.00      1      1 -23.93
+# Polyp_Spi4 3 82.58      28.23      0      1 -38.05
+# Polyp_Spi2 3 97.35      43.00      0      1 -45.50
+
+
+
+
+## ---- 4.06. YII --------------------------------------------------------------
+### --- 4.06.1. Pve ------------------------------------------------------------
+YII_Pve <- subset(YII, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+YII_Pve1 <- lm((value) ~ (conc), data = YII_Pve)
+#view the output of the model
+summary(YII_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = YII_Pve)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -12.4270  -3.5702   0.1322   2.9918  21.5346 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 102.14475    0.68912 148.225   <2e-16 ***
+#   conc          0.03206    0.01533   2.091   0.0394 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 5.683 on 88 degrees of freedom
+# Multiple R-squared:  0.04735,	Adjusted R-squared:  0.03652 
+# F-statistic: 4.374 on 1 and 88 DF,  p-value: 0.03938
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+YII_Pve_wocon <- YII_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+YII_Pve2 <- lm(value_log ~ conc_log, data = YII_Pve_wocon)
+#view the output of the model
+summary(YII_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = YII_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.142236 -0.026691  0.002753  0.022866  0.175445 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.624755   0.007039 657.033  < 2e-16 ***
+#   conc_log    0.008721   0.002496   3.494 0.000829 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.05452 on 70 degrees of freedom
+# Multiple R-squared:  0.1485,	Adjusted R-squared:  0.1364 
+# F-statistic: 12.21 on 1 and 70 DF,  p-value: 0.0008289
+
+# log-log transformed - early linearity
+YII_Pve_wocon100 <- YII_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+YII_Pve3 <- lm(value_log ~ conc_log, data = YII_Pve_wocon100)
+#view the output of the model
+summary(YII_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = YII_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.157088 -0.028741  0.005773  0.030356  0.160593 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.628468   0.007809 592.678  < 2e-16 ***
+#   conc_log    0.013559   0.004154   3.264  0.00194 ** 
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.05739 on 52 degrees of freedom
+# Multiple R-squared:  0.1701,	Adjusted R-squared:  0.1541 
+# F-statistic: 10.66 on 1 and 52 DF,  p-value: 0.001944
+
+
+# log-log transformed - late linearity
+YII_Pve_wocon01 <- YII_Pve_wocon %>%
+  subset(conc != "0.1")
+YII_Pve4 <- lm(value_log ~ conc_log, data = YII_Pve_wocon01)
+#view the output of the model
+summary(YII_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = YII_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.14684 -0.02434 -0.00117  0.01970  0.17084 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.643170   0.011158 416.116   <2e-16 ***
+#   conc_log    0.002723   0.003754   0.726    0.471    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.05186 on 52 degrees of freedom
+# Multiple R-squared:  0.01002,	Adjusted R-squared:  -0.009017 
+# F-statistic: 0.5264 on 1 and 52 DF,  p-value: 0.4714
 
 # Logarithmic
 plot(YII_Pve$conc, YII_Pve$value)
 #fit the model
-model <- lm(YII_Pve_wocon$value ~ log(YII_Pve_wocon$conc))
+YII_Pve5 <- lm(value ~ conc_log, data = YII_Pve_wocon)
 #view the output of the model
-summary(model)
+summary(YII_Pve5)
 # OUTPUT: Call:
-# lm(formula = YII_Pve_wocon$value ~ log(YII_Pve_wocon$conc))
+# lm(formula = value ~ log(conc), data = YII_Pve_wocon)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
+#   Min     1Q Median     3Q    Max 
 # -13.9522  -2.8509   0.1149   2.1959  19.7962 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)             102.1607     0.7322 139.520  < 2e-16 ***
-#   log(YII_Pve_wocon$conc)   0.8873     0.2596   3.417  0.00106 ** 
+# (Intercept) 102.1607     0.7322 139.520  < 2e-16 ***
+#   conc_log      0.8873     0.2596   3.417  0.00106 ** 
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # Residual standard error: 5.672 on 70 degrees of freedom
 # Multiple R-squared:  0.143,	Adjusted R-squared:  0.1307 
 # F-statistic: 11.68 on 1 and 70 DF,  p-value: 0.001057
 
-
-# YII Spi
-YII_Spi <- subset(YII_all, spec == "Spi")
-
 # Exponential
-ks.test(YII_Spi$value, YII_Spi$conc, y = "pexp")
-# OUTPUT: 	Asymptotic one-sample Kolmogorov-Smirnov test
-# data:  YII_Spi$value
+ks.test(YII_Pve$value, YII_Pve$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  YII_Pve$value
 # D = 0.98889, p-value < 2.2e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
+
+
+# AIC test
+models_YII_Pve <- list(YII_Pve2, YII_Pve3, YII_Pve4)
+model.names <- c('YII_Pve2', 'YII_Pve3', 'YII_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_YII_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# YII_Pve2 3 -210.26       0.00      1      1 108.31
+# YII_Pve4 3 -161.91      48.36      0      1  84.19
+# YII_Pve3 3 -150.97      59.29      0      1  78.72
+
+
+### --- 4.06.2. Spi ------------------------------------------------------------
+# YII Spi
+YII_Spi <- subset(YII, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+YII_Spi1 <- lm((value) ~ (conc), data = YII_Spi)
+#view the output of the model
+summary(YII_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = YII_Spi)
+# Residuals:
+#        Min       1Q   Median       3Q      Max 
+# -16.5670  -4.8838  -0.2954   4.2738  23.8142 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 103.93158    0.89176 116.546   <2e-16 ***
+#   conc          0.01954    0.01984   0.985    0.327    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 7.354 on 88 degrees of freedom
+# Multiple R-squared:  0.0109,	Adjusted R-squared:  -0.0003393 
+# F-statistic: 0.9698 on 1 and 88 DF,  p-value: 0.3274
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+YII_Spi_wocon <- YII_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+YII_Spi2 <- lm(value_log ~ conc_log, data = YII_Spi_wocon)
+#view the output of the model
+summary(YII_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = YII_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.156151 -0.039911 -0.001296  0.036971  0.195982 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.640694   0.009153 507.025   <2e-16 ***
+#   conc_log    0.006469   0.003246   1.993   0.0501 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.0709 on 70 degrees of freedom
+# Multiple R-squared:  0.0537,	Adjusted R-squared:  0.04018 
+# F-statistic: 3.973 on 1 and 70 DF,  p-value: 0.05015
+
+# log-log transformed - early linearity
+YII_Spi_wocon100 <- YII_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+YII_Spi3 <- lm(value_log ~ conc_log, data = YII_Spi_wocon100)
+#view the output of the model
+summary(YII_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = YII_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.174222 -0.036416 -0.000538  0.033110  0.177911 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.645212   0.010230 454.068   <2e-16 ***
+#   conc_log    0.012355   0.005441   2.271   0.0273 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.07518 on 52 degrees of freedom
+# Multiple R-squared:  0.0902,	Adjusted R-squared:  0.0727 
+# F-statistic: 5.155 on 1 and 52 DF,  p-value: 0.02735
+
+
+# log-log transformed - late linearity
+YII_Spi_wocon01 <- YII_Spi_wocon %>%
+  subset(conc != "0.1")
+YII_Spi4 <- lm(value_log ~ conc_log, data = YII_Spi_wocon01)
+#view the output of the model
+summary(YII_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = YII_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.155641 -0.049500  0.000609  0.032584  0.196491 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.638655   0.015689 295.659   <2e-16 ***
+#   conc_log    0.007133   0.005278   1.352    0.182    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.07292 on 52 degrees of freedom
+# Multiple R-squared:  0.03393,	Adjusted R-squared:  0.01536 
+# F-statistic: 1.827 on 1 and 52 DF,  p-value: 0.1824
+
 
 # Logarithmic
 plot(YII_Spi$conc, YII_Spi$value)
 #fit the model
-model <- lm(YII_Spi_wocon$value ~ log(YII_Spi_wocon$conc))
+YII_Spi5 <- lm(value ~ log(conc), data = YII_Spi_wocon)
 #view the output of the model
-summary(model)
+summary(YII_Spi5)
 # OUTPUT: Call:
-# lm(formula = YII_Spi_wocon$value ~ log(YII_Spi_wocon$conc))
+# lm(formula = value ~ log(conc), data = YII_Spi_wocon)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
+#   Min     1Q Median     3Q    Max 
 # -15.4772  -4.2948  -0.3825   3.6747  22.4974 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)             103.8810     0.9690 107.199   <2e-16 ***
-#   log(YII_Spi_wocon$conc)   0.6787     0.3436   1.975   0.0522 .  
+# (Intercept) 103.8810     0.9690 107.199   <2e-16 ***
+#   log(conc)     0.6787     0.3436   1.975   0.0522 .  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # Residual standard error: 7.506 on 70 degrees of freedom
 # Multiple R-squared:  0.05279,	Adjusted R-squared:  0.03926 
 # F-statistic: 3.901 on 1 and 70 DF,  p-value: 0.0522
 
+# Exponential
+ks.test(YII_Spi$value, YII_Spi$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  YII_Spi$value
+# D = 0.98889, p-value < 2.2e-16
+# alternative hypothesis: two-sided
+# no exp correlation
 
-## ---- 5.07. FvFm -------------------------------------------------------------
-# FvFm Pve
-FvFm_Pve <- subset(FvFm_all, spec == "Pve")
+
+# AIC test
+models_YII_Spi <- list(YII_Spi2, YII_Spi3, YII_Spi4)
+model.names <- c('YII_Spi2', 'YII_Spi3', 'YII_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_YII_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# YII_Spi2 3 -172.45       0.00      1      1 89.40
+# YII_Spi4 3 -125.10      47.34      0      1 65.79
+# YII_Spi3 3 -121.81      50.64      0      1 64.14
+
+
+
+
+
+## ---- 4.07. FvFm -------------------------------------------------------------
+### --- 4.07.1. Pve ------------------------------------------------------------
+FvFm_Pve <- subset(FvFm, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+FvFm_Pve1 <- lm((value) ~ (conc), data = FvFm_Pve)
+#view the output of the model
+summary(FvFm_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = FvFm_Pve)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -70.682 -36.743  -8.475  17.206 260.117 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 106.5496     6.8482  15.559   <2e-16 ***
+#   conc          0.2916     0.1524   1.914   0.0589 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 56.47 on 88 degrees of freedom
+# Multiple R-squared:  0.03997,	Adjusted R-squared:  0.02906 
+# F-statistic: 3.663 on 1 and 88 DF,  p-value: 0.05887
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+FvFm_Pve_wocon <- FvFm_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+FvFm_Pve2 <- lm(value_log ~ conc_log, data = FvFm_Pve_wocon)
+#view the output of the model
+summary(FvFm_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = FvFm_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.00274 -0.31856 -0.01877  0.21841  1.29693 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.59066    0.05550   82.72   <2e-16 ***
+#   conc_log     0.03700    0.01968    1.88   0.0643 .  
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4299 on 70 degrees of freedom
+# Multiple R-squared:  0.04806,	Adjusted R-squared:  0.03446 
+# F-statistic: 3.534 on 1 and 70 DF,  p-value: 0.06427
+
+# log-log transformed - early linearity
+FvFm_Pve_wocon100 <- FvFm_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+FvFm_Pve3 <- lm(value_log ~ conc_log, data = FvFm_Pve_wocon100)
+#view the output of the model
+summary(FvFm_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = FvFm_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.96833 -0.32002  0.01725  0.23465  1.33134 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.556253   0.060869  74.853   <2e-16 ***
+#   conc_log    -0.007833   0.032376  -0.242     0.81    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4473 on 52 degrees of freedom
+# Multiple R-squared:  0.001125,	Adjusted R-squared:  -0.01808 
+# F-statistic: 0.05854 on 1 and 52 DF,  p-value: 0.8098
+
+
+# log-log transformed - late linearity
+FvFm_Pve_wocon01 <- FvFm_Pve_wocon %>%
+  subset(conc != "0.1")
+FvFm_Pve4 <- lm(value_log ~ conc_log, data = FvFm_Pve_wocon01)
+#view the output of the model
+summary(FvFm_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = FvFm_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.87560 -0.26526 -0.00667  0.23552  1.42407 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.46352    0.09198  48.528   <2e-16 ***
+#   conc_log     0.07841    0.03094   2.534   0.0143 *  
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4275 on 52 degrees of freedom
+# Multiple R-squared:  0.1099,	Adjusted R-squared:  0.09281 
+# F-statistic: 6.422 on 1 and 52 DF,  p-value: 0.01432
+
+# Logarithmic
+plot(FvFm_Pve$conc, FvFm_Pve$value)
+#fit the model
+FvFm_Pve5 <- lm(value ~ conc_log, data = FvFm_Pve_wocon)
+#view the output of the model
+summary(FvFm_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = FvFm_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -73.03 -37.03 -12.33  14.81 251.35 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  109.187      6.884  15.860   <2e-16 ***
+#   conc_log       3.538      2.441   1.449    0.152    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 53.33 on 70 degrees of freedom
+# Multiple R-squared:  0.02913,	Adjusted R-squared:  0.01526 
+# F-statistic:   2.1 on 1 and 70 DF,  p-value: 0.1517
 
 # Exponential
 ks.test(FvFm_Pve$value, FvFm_Pve$conc, y = "pexp")
@@ -1755,32 +1813,135 @@ ks.test(FvFm_Pve$value, FvFm_Pve$conc, y = "pexp")
 # data:  FvFm_Pve$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(FvFm_Pve$conc, FvFm_Pve$value)
-#fit the model
-model <- lm(FvFm_Pve_wocon$value ~ log(FvFm_Pve_wocon$conc))
+
+# AIC test
+models_FvFm_Pve <- list(FvFm_Pve2, FvFm_Pve3, FvFm_Pve4)
+model.names <- c('FvFm_Pve2', 'FvFm_Pve3', 'FvFm_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_FvFm_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# FvFm_Pve4 3 65.90       0.00   0.92   0.92 -29.71
+# FvFm_Pve3 3 70.80       4.90   0.08   1.00 -32.16
+# FvFm_Pve2 3 87.08      21.18   0.00   1.00 -40.36
+
+
+### --- 4.07.2. Spi ------------------------------------------------------------
+# FvFm Spi
+FvFm_Spi <- subset(FvFm, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+FvFm_Spi1 <- lm((value) ~ (conc), data = FvFm_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = FvFm_Pve_wocon$value ~ log(FvFm_Pve_wocon$conc))
+summary(FvFm_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = FvFm_Spi)
 # Residuals:
-#   Min     1Q Median     3Q    Max 
-# -73.03 -37.03 -12.33  14.81 251.35 
+#        Min       1Q   Median       3Q      Max 
+# -83.74 -38.15 -12.03  30.45 288.31 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)               109.187      6.884  15.860   <2e-16 ***
-#   log(FvFm_Pve_wocon$conc)    3.538      2.441   1.449    0.152    
+# (Intercept) 124.6165     6.8254  18.258   <2e-16 ***
+#   conc         -0.2634     0.1519  -1.734   0.0863 .  
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 53.33 on 70 degrees of freedom
-# Multiple R-squared:  0.02913,	Adjusted R-squared:  0.01526 
-# F-statistic:   2.1 on 1 and 70 DF,  p-value: 0.1517
+# Residual standard error: 56.29 on 88 degrees of freedom
+# Multiple R-squared:  0.03306,	Adjusted R-squared:  0.02207 
+# F-statistic: 3.008 on 1 and 88 DF,  p-value: 0.08633
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+FvFm_Spi_wocon <- FvFm_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+FvFm_Spi2 <- lm(value_log ~ conc_log, data = FvFm_Spi_wocon)
+#view the output of the model
+summary(FvFm_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = FvFm_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.97289 -0.23591 -0.00889  0.27210  1.25004 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.71215    0.05142  91.639   <2e-16 ***
+#   conc_log    -0.02650    0.01823  -1.453    0.151    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3983 on 70 degrees of freedom
+# Multiple R-squared:  0.02929,	Adjusted R-squared:  0.01542 
+# F-statistic: 2.112 on 1 and 70 DF,  p-value: 0.1506
+
+# log-log transformed - early linearity
+FvFm_Spi_wocon100 <- FvFm_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+FvFm_Spi3 <- lm(value_log ~ conc_log, data = FvFm_Spi_wocon100)
+#view the output of the model
+summary(FvFm_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = FvFm_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.73327 -0.23881 -0.03938  0.23225  1.29788 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.736072   0.053726  88.152   <2e-16 ***
+#   conc_log    0.004664   0.028577   0.163    0.871    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3948 on 52 degrees of freedom
+# Multiple R-squared:  0.0005119,	Adjusted R-squared:  -0.01871 
+# F-statistic: 0.02663 on 1 and 52 DF,  p-value: 0.871
 
 
-# FvFm Spi
-FvFm_Spi <- subset(FvFm_all, spec == "Spi")
+# log-log transformed - late linearity
+FvFm_Spi_wocon01 <- FvFm_Spi_wocon %>%
+  subset(conc != "0.1")
+FvFm_Spi4 <- lm(value_log ~ conc_log, data = FvFm_Spi_wocon01)
+#view the output of the model
+summary(FvFm_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = FvFm_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.96409 -0.23485  0.02376  0.27049  0.71689 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.72975    0.07885  59.983   <2e-16 ***
+#   conc_log    -0.03223    0.02653  -1.215     0.23    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3665 on 52 degrees of freedom
+# Multiple R-squared:  0.02761,	Adjusted R-squared:  0.008911 
+# F-statistic: 1.477 on 1 and 52 DF,  p-value: 0.2298
+
+
+# Logarithmic
+plot(FvFm_Spi$conc, FvFm_Spi$value)
+#fit the model
+FvFm_Spi5 <- lm(value ~ log(conc), data = FvFm_Spi_wocon)
+#view the output of the model
+summary(FvFm_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = FvFm_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -76.59 -33.82 -10.21  25.66 282.14 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  121.725      6.847  17.779   <2e-16 ***
+#   log(conc)     -3.924      2.428  -1.616    0.111    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 53.03 on 70 degrees of freedom
+# Multiple R-squared:  0.03598,	Adjusted R-squared:  0.02221 
+# F-statistic: 2.613 on 1 and 70 DF,  p-value: 0.1105
 
 # Exponential
 ks.test(FvFm_Spi$value, FvFm_Spi$conc, y = "pexp")
@@ -1788,34 +1949,135 @@ ks.test(FvFm_Spi$value, FvFm_Spi$conc, y = "pexp")
 # data:  FvFm_Spi$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(FvFm_Spi$conc, FvFm_Spi$value)
-#fit the model 
-model <- lm(FvFm_Spi_wocon$value ~ log(FvFm_Spi_wocon$conc))
+
+# AIC test
+models_FvFm_Spi <- list(FvFm_Spi2, FvFm_Spi3, FvFm_Spi4)
+model.names <- c('FvFm_Spi2', 'FvFm_Spi3', 'FvFm_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_FvFm_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# FvFm_Spi4 3 49.27       0.00   0.98   0.98 -21.40
+# FvFm_Spi3 3 57.32       8.04   0.02   1.00 -25.42
+# FvFm_Spi2 3 76.09      26.82   0.00   1.00 -34.87
+
+
+
+## ---- 4.08. rETRmax ----------------------------------------------------------
+### --- 4.08.1. Pve ------------------------------------------------------------
+rETR_Pve <- subset(rETR, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+rETR_Pve1 <- lm((value) ~ (conc), data = rETR_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = FvFm_Spi_wocon$value ~ log(FvFm_Spi_wocon$conc))
+summary(rETR_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = rETR_Pve)
 # Residuals:
-#   Min     1Q Median     3Q    Max 
-# -76.59 -33.82 -10.21  25.66 282.14 
+#   Min      1Q  Median      3Q     Max 
+# -109.345  -33.855    2.065   27.208  124.708 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)               121.725      6.847  17.779   <2e-16 ***
-#   log(FvFm_Spi_wocon$conc)   -3.924      2.428  -1.616    0.111    
+# (Intercept) 179.58987    6.28012  28.597   <2e-16 ***
+#   conc         -0.02225    0.13972  -0.159    0.874    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 53.03 on 70 degrees of freedom
-# Multiple R-squared:  0.03598,	Adjusted R-squared:  0.02221 
-# F-statistic: 2.613 on 1 and 70 DF,  p-value: 0.1105
+# Residual standard error: 51.79 on 88 degrees of freedom
+# Multiple R-squared:  0.000288,	Adjusted R-squared:  -0.01107 
+# F-statistic: 0.02535 on 1 and 88 DF,  p-value: 0.8739
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+rETR_Pve_wocon <- rETR_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+rETR_Pve2 <- lm(value_log ~ conc_log, data = rETR_Pve_wocon)
+#view the output of the model
+summary(rETR_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = rETR_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.87688 -0.16597  0.05915  0.20400  0.53229 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 5.121795   0.041030 124.831   <2e-16 ***
+#   conc_log    0.001698   0.014549   0.117    0.907    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3178 on 70 degrees of freedom
+# Multiple R-squared:  0.0001945,	Adjusted R-squared:  -0.01409 
+# F-statistic: 0.01362 on 1 and 70 DF,  p-value: 0.9074
+
+# log-log transformed - early linearity
+rETR_Pve_wocon100 <- rETR_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+rETR_Pve3 <- lm(value_log ~ conc_log, data = rETR_Pve_wocon100)
+#view the output of the model
+summary(rETR_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = rETR_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.86680 -0.18634  0.04533  0.19797  0.53481 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.119274   0.043179 118.559   <2e-16 ***
+#   conc_log    -0.001587   0.022967  -0.069    0.945    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3173 on 52 degrees of freedom
+# Multiple R-squared:  9.179e-05,	Adjusted R-squared:  -0.01914 
+# F-statistic: 0.004774 on 1 and 52 DF,  p-value: 0.9452
 
 
+# log-log transformed - late linearity
+rETR_Pve_wocon01 <- rETR_Pve_wocon %>%
+  subset(conc != "0.1")
+rETR_Pve4 <- lm(value_log ~ conc_log, data = rETR_Pve_wocon01)
+#view the output of the model
+summary(rETR_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = rETR_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.88329 -0.14544  0.06062  0.20193  0.50664 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.147443   0.071735  71.756   <2e-16 ***
+#   conc_log    -0.006656   0.024132  -0.276    0.784    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3334 on 52 degrees of freedom
+# Multiple R-squared:  0.001461,	Adjusted R-squared:  -0.01774 
+# F-statistic: 0.07608 on 1 and 52 DF,  p-value: 0.7838
 
-## ---- 5.08. rETRmax ----------------------------------------------------------
-# rETRmax Pve
-rETR_Pve <- subset(rETR_all, spec == "Pve")
+# Logarithmic
+plot(rETR_Pve$conc, rETR_Pve$value)
+#fit the model
+rETR_Pve5 <- lm(value ~ conc_log, data = rETR_Pve_wocon)
+#view the output of the model
+summary(rETR_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = rETR_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -106.379  -33.431    2.466   30.469  110.385 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 175.0712     6.4759  27.034   <2e-16 ***
+#   conc_log      0.5778     2.2964   0.252    0.802    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 50.16 on 70 degrees of freedom
+# Multiple R-squared:  0.0009035,	Adjusted R-squared:  -0.01337 
+# F-statistic: 0.06331 on 1 and 70 DF,  p-value: 0.8021
 
 # Exponential
 ks.test(rETR_Pve$value, rETR_Pve$conc, y = "pexp")
@@ -1823,32 +2085,135 @@ ks.test(rETR_Pve$value, rETR_Pve$conc, y = "pexp")
 # data:  rETR_Pve$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(rETR_Pve$conc, rETR_Pve$value)
-#fit the model
-model <- lm(rETR_Pve_wocon$value ~ log(rETR_Pve_wocon$conc))
+
+# AIC test
+models_rETR_Pve <- list(rETR_Pve2, rETR_Pve3, rETR_Pve4)
+model.names <- c('rETR_Pve2', 'rETR_Pve3', 'rETR_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_rETR_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# rETR_Pve3 3 33.71       0.00   0.93   0.93 -13.62
+# rETR_Pve4 3 39.06       5.34   0.06   0.99 -16.29
+# rETR_Pve2 3 43.59       9.87   0.01   1.00 -18.62
+
+
+### --- 4.08.2. Spi ------------------------------------------------------------
+# rETR Spi
+rETR_Spi <- subset(rETR, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+rETR_Spi1 <- lm((value) ~ (conc), data = rETR_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = rETR_Pve_wocon$value ~ log(rETR_Pve_wocon$conc))
+summary(rETR_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = rETR_Spi)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -106.379  -33.431    2.466   30.469  110.385 
+#        Min       1Q   Median       3Q      Max 
+# -122.732  -34.476   -5.678   40.913   99.453 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)              175.0712     6.4759  27.034   <2e-16 ***
-#   log(rETR_Pve_wocon$conc)   0.5778     2.2964   0.252    0.802    
+# (Intercept) 1.446e+02  6.006e+00  24.074   <2e-16 ***
+#   conc        3.696e-03  1.336e-01   0.028    0.978    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 50.16 on 70 degrees of freedom
-# Multiple R-squared:  0.0009035,	Adjusted R-squared:  -0.01337 
-# F-statistic: 0.06331 on 1 and 70 DF,  p-value: 0.8021
+# Residual standard error: 49.52 on 88 degrees of freedom
+# Multiple R-squared:  8.695e-06,	Adjusted R-squared:  -0.01135 
+# F-statistic: 0.0007651 on 1 and 88 DF,  p-value: 0.978
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+rETR_Spi_wocon <- rETR_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+rETR_Spi2 <- lm(value_log ~ conc_log, data = rETR_Spi_wocon)
+#view the output of the model
+summary(rETR_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = rETR_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.7887 -0.1681  0.0210  0.2904  0.6255 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.870374   0.052939  91.999   <2e-16 ***
+#   conc_log    0.004178   0.018772   0.223    0.825    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4101 on 70 degrees of freedom
+# Multiple R-squared:  0.0007072,	Adjusted R-squared:  -0.01357 
+# F-statistic: 0.04954 on 1 and 70 DF,  p-value: 0.8245
+
+# log-log transformed - early linearity
+rETR_Spi_wocon100 <- rETR_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+rETR_Spi3 <- lm(value_log ~ conc_log, data = rETR_Spi_wocon100)
+#view the output of the model
+summary(rETR_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = rETR_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.19697 -0.18613 -0.02382  0.22540  0.62930 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.872275   0.049568  98.295   <2e-16 ***
+#   conc_log    0.006655   0.026365   0.252    0.802    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3642 on 52 degrees of freedom
+# Multiple R-squared:  0.001224,	Adjusted R-squared:  -0.01798 
+# F-statistic: 0.06371 on 1 and 52 DF,  p-value: 0.8017
 
 
-# rETRmax Spi
-rETR_Spi <- subset(rETR_all, spec == "Spi")
+# log-log transformed - late linearity
+rETR_Spi_wocon01 <- rETR_Spi_wocon %>%
+  subset(conc != "0.1")
+rETR_Spi4 <- lm(value_log ~ conc_log, data = rETR_Spi_wocon01)
+#view the output of the model
+summary(rETR_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = rETR_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.79329 -0.15359  0.06252  0.28121  0.61977 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.861165   0.092385  52.619   <2e-16 ***
+#   conc_log    0.007178   0.031078   0.231    0.818    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.4294 on 52 degrees of freedom
+# Multiple R-squared:  0.001025,	Adjusted R-squared:  -0.01819 
+# F-statistic: 0.05334 on 1 and 52 DF,  p-value: 0.8183
+
+
+# Logarithmic
+plot(rETR_Spi$conc, rETR_Spi$value)
+#fit the model
+rETR_Spi5 <- lm(value ~ log(conc), data = rETR_Spi_wocon)
+#view the output of the model
+summary(rETR_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = rETR_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -121.701  -28.846   -6.634   34.754  104.452 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  139.239      6.198  22.467   <2e-16 ***
+#   log(conc)      1.016      2.198   0.462    0.645    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 48.01 on 70 degrees of freedom
+# Multiple R-squared:  0.003046,	Adjusted R-squared:  -0.0112 
+# F-statistic: 0.2138 on 1 and 70 DF,  p-value: 0.6452
 
 # Exponential
 ks.test(rETR_Spi$value, rETR_Spi$conc, y = "pexp")
@@ -1856,33 +2221,136 @@ ks.test(rETR_Spi$value, rETR_Spi$conc, y = "pexp")
 # data:  rETR_Spi$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(rETR_Spi$conc, rETR_Spi$value)
-#fit the model
-model <- lm(rETR_Spi_wocon$value ~ log(rETR_Spi_wocon$conc))
+
+# AIC test
+models_rETR_Spi <- list(rETR_Spi2, rETR_Spi3, rETR_Spi4)
+model.names <- c('rETR_Spi2', 'rETR_Spi3', 'rETR_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_rETR_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# rETR_Spi3 3 48.62       0.00      1      1 -21.07
+# rETR_Spi4 3 66.38      17.76      0      1 -29.95
+# rETR_Spi2 3 80.28      31.67      0      1 -36.97
+
+
+
+
+## ---- 4.09. Ek ---------------------------------------------------------------
+### --- 4.09.1. Pve ------------------------------------------------------------
+Ek_Pve <- subset(Ek, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Ek_Pve1 <- lm((value) ~ (conc), data = Ek_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = rETR_Spi_wocon$value ~ log(rETR_Spi_wocon$conc))
+summary(Ek_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = Ek_Pve)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -121.701  -28.846   -6.634   34.754  104.452 
+#   Min      1Q  Median      3Q     Max 
+# -187.740  -61.108   -0.411   58.759  255.741 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)               139.239      6.198  22.467   <2e-16 ***
-#   log(rETR_Spi_wocon$conc)    1.016      2.198   0.462    0.645    
+# (Intercept) 319.31588   11.54176  27.666   <2e-16 ***
+#   conc         -0.07852    0.25679  -0.306     0.76    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 48.01 on 70 degrees of freedom
-# Multiple R-squared:  0.003046,	Adjusted R-squared:  -0.0112 
-# F-statistic: 0.2138 on 1 and 70 DF,  p-value: 0.6452
+# Residual standard error: 95.18 on 88 degrees of freedom
+# Multiple R-squared:  0.001061,	Adjusted R-squared:  -0.01029 
+# F-statistic: 0.0935 on 1 and 88 DF,  p-value: 0.7605
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+Ek_Pve_wocon <- Ek_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Ek_Pve2 <- lm(value_log ~ conc_log, data = Ek_Pve_wocon)
+#view the output of the model
+summary(Ek_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = Ek_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.82094 -0.15392  0.04632  0.23632  0.61544 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.6968168  0.0410720 138.703   <2e-16 ***
+#   conc_log    -0.0009916  0.0145641  -0.068    0.946    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3181 on 70 degrees of freedom
+# Multiple R-squared:  6.622e-05,	Adjusted R-squared:  -0.01422 
+# F-statistic: 0.004636 on 1 and 70 DF,  p-value: 0.9459
+
+# log-log transformed - early linearity
+Ek_Pve_wocon100 <- Ek_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Ek_Pve3 <- lm(value_log ~ conc_log, data = Ek_Pve_wocon100)
+#view the output of the model
+summary(Ek_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = Ek_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.81120 -0.16149  0.04859  0.17861  0.61788 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.694383   0.043228 131.728   <2e-16 ***
+#   conc_log    -0.004163   0.022993  -0.181    0.857    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3177 on 52 degrees of freedom
+# Multiple R-squared:  0.0006299,	Adjusted R-squared:  -0.01859 
+# F-statistic: 0.03278 on 1 and 52 DF,  p-value: 0.857
 
 
-## ---- 5.09. Ek ---------------------------------------------------------------
-# Ek Pve
-Ek_Pve <- subset(Ek_all, spec == "Pve")
+# log-log transformed - late linearity
+Ek_Pve_wocon01 <- Ek_Pve_wocon %>%
+  subset(conc != "0.1")
+Ek_Pve4 <- lm(value_log ~ conc_log, data = Ek_Pve_wocon01)
+#view the output of the model
+summary(Ek_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = Ek_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.83018 -0.12148  0.03205  0.26583  0.57847 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.73379    0.07220  79.415   <2e-16 ***
+#   conc_log    -0.01304    0.02429  -0.537    0.594    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3356 on 52 degrees of freedom
+# Multiple R-squared:  0.005509,	Adjusted R-squared:  -0.01362 
+# F-statistic: 0.288 on 1 and 52 DF,  p-value: 0.5938
+
+# Logarithmic
+plot(Ek_Pve$conc, Ek_Pve$value)
+#fit the model
+Ek_Pve5 <- lm(value ~ conc_log, data = Ek_Pve_wocon)
+#view the output of the model
+summary(Ek_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = Ek_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -181.308  -54.581   -0.762   63.331  239.949 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 311.3399    11.9502  26.053   <2e-16 ***
+#   conc_log      0.3295     4.2376   0.078    0.938    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 92.57 on 70 degrees of freedom
+# Multiple R-squared:  8.635e-05,	Adjusted R-squared:  -0.0142 
+# F-statistic: 0.006045 on 1 and 70 DF,  p-value: 0.9382
 
 # Exponential
 ks.test(Ek_Pve$value, Ek_Pve$conc, y = "pexp")
@@ -1890,32 +2358,135 @@ ks.test(Ek_Pve$value, Ek_Pve$conc, y = "pexp")
 # data:  Ek_Pve$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(Ek_Pve$conc, Ek_Pve$value)
-#fit the model
-model <- lm(Ek_Pve_wocon$value ~ log(Ek_Pve_wocon$conc))
+
+# AIC test
+models_Ek_Pve <- list(Ek_Pve2, Ek_Pve3, Ek_Pve4)
+model.names <- c('Ek_Pve2', 'Ek_Pve3', 'Ek_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Ek_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Ek_Pve3 3 33.84       0.00   0.94   0.94 -13.68
+# Ek_Pve4 3 39.76       5.92   0.05   0.99 -16.64
+# Ek_Pve2 3 43.74       9.90   0.01   1.00 -18.69
+
+
+### --- 4.09.2. Spi ------------------------------------------------------------
+# Ek Spi
+Ek_Spi <- subset(Ek, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+Ek_Spi1 <- lm((value) ~ (conc), data = Ek_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = Ek_Pve_wocon$value ~ log(Ek_Pve_wocon$conc))
+summary(Ek_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = Ek_Spi)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -181.308  -54.581   -0.762   63.331  239.949 
+#        Min       1Q   Median       3Q      Max 
+# -185.15  -61.34    2.11   47.24  166.52 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)            311.3399    11.9502  26.053   <2e-16 ***
-#   log(Ek_Pve_wocon$conc)   0.3295     4.2376   0.078    0.938    
+# (Intercept) 276.25397    9.37645  29.463   <2e-16 ***
+#   conc          0.05082    0.20861   0.244    0.808    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 92.57 on 70 degrees of freedom
-# Multiple R-squared:  8.635e-05,	Adjusted R-squared:  -0.0142 
-# F-statistic: 0.006045 on 1 and 70 DF,  p-value: 0.9382
+# Residual standard error: 77.32 on 88 degrees of freedom
+# Multiple R-squared:  0.0006741,	Adjusted R-squared:  -0.01068 
+# F-statistic: 0.05936 on 1 and 88 DF,  p-value: 0.8081
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+Ek_Spi_wocon <- Ek_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+Ek_Spi2 <- lm(value_log ~ conc_log, data = Ek_Spi_wocon)
+#view the output of the model
+summary(Ek_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = Ek_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.0048 -0.1878  0.0053  0.1994  0.5313 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 5.554811   0.038252  145.22   <2e-16 ***
+#   conc_log    0.003531   0.013564    0.26    0.795    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2963 on 70 degrees of freedom
+# Multiple R-squared:  0.0009669,	Adjusted R-squared:  -0.01331 
+# F-statistic: 0.06775 on 1 and 70 DF,  p-value: 0.7954
+
+# log-log transformed - early linearity
+Ek_Spi_wocon100 <- Ek_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+Ek_Spi3 <- lm(value_log ~ conc_log, data = Ek_Spi_wocon100)
+#view the output of the model
+summary(Ek_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = Ek_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.62223 -0.18967  0.01774  0.16377  0.55116 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.549836   0.036443 152.286   <2e-16 ***
+#   conc_log    -0.002952   0.019384  -0.152     0.88    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.2678 on 52 degrees of freedom
+# Multiple R-squared:  0.0004457,	Adjusted R-squared:  -0.01878 
+# F-statistic: 0.02319 on 1 and 52 DF,  p-value: 0.8796
 
 
-# Ek Spi
-Ek_Spi <- subset(Ek_all, spec == "Spi")
+# log-log transformed - late linearity
+Ek_Spi_wocon01 <- Ek_Spi_wocon %>%
+  subset(conc != "0.1")
+Ek_Spi4 <- lm(value_log ~ conc_log, data = Ek_Spi_wocon01)
+#view the output of the model
+summary(Ek_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = Ek_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -1.00834 -0.18700  0.00979  0.20177  0.53306 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.54763    0.06619  83.816   <2e-16 ***
+#   conc_log     0.00587    0.02227   0.264    0.793    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.3076 on 52 degrees of freedom
+# Multiple R-squared:  0.001335,	Adjusted R-squared:  -0.01787 
+# F-statistic: 0.0695 on 1 and 52 DF,  p-value: 0.7931
+
+
+# Logarithmic
+plot(Ek_Spi$conc, Ek_Spi$value)
+#fit the model
+Ek_Spi5 <- lm(value ~ log(conc), data = Ek_Spi_wocon)
+#view the output of the model
+summary(Ek_Spi5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = Ek_Spi_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -180.234  -54.928   -9.418   45.653  170.911 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  268.314      9.841  27.266   <2e-16 ***
+#   log(conc)      1.761      3.490   0.505    0.615    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 76.23 on 70 degrees of freedom
+# Multiple R-squared:  0.003624,	Adjusted R-squared:  -0.01061 
+# F-statistic: 0.2546 on 1 and 70 DF,  p-value: 0.6154
 
 # Exponential
 ks.test(Ek_Spi$value, Ek_Spi$conc, y = "pexp")
@@ -1923,33 +2494,137 @@ ks.test(Ek_Spi$value, Ek_Spi$conc, y = "pexp")
 # data:  Ek_Spi$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(Ek_Spi$conc, Ek_Spi$value)
-#fit the model
-model <- lm(Ek_Spi_wocon$value ~ log(Ek_Spi_wocon$conc))
+
+# AIC test
+models_Ek_Spi <- list(Ek_Spi2, Ek_Spi3, Ek_Spi4)
+model.names <- c('Ek_Spi2', 'Ek_Spi3', 'Ek_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_Ek_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# Ek_Spi3 3 15.40       0.00      1      1  -4.46
+# Ek_Spi4 3 30.37      14.97      0      1 -11.94
+# Ek_Spi2 3 33.49      18.09      0      1 -13.57
+
+
+
+
+
+## ---- 4.10. Alpha ------------------------------------------------------------
+### --- 4.10.1. Pve ------------------------------------------------------------
+alpha_Pve <- subset(alpha, spec == "Pve") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+alpha_Pve1 <- lm((value) ~ (conc), data = alpha_Pve)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = Ek_Spi_wocon$value ~ log(Ek_Spi_wocon$conc))
+summary(alpha_Pve1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = alpha_Pve)
 # Residuals:
-#   Min       1Q   Median       3Q      Max 
-# -180.234  -54.928   -9.418   45.653  170.911 
+#   Min      1Q  Median      3Q     Max 
+# -0.139955 -0.034859  0.006227  0.035919  0.130337 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)             268.314      9.841  27.266   <2e-16 ***
-#   log(Ek_Spi_wocon$conc)    1.761      3.490   0.505    0.615    
+# (Intercept) 5.654e-01  6.490e-03  87.118   <2e-16 ***
+#   conc        7.233e-05  1.444e-04   0.501    0.618    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 76.23 on 70 degrees of freedom
-# Multiple R-squared:  0.003624,	Adjusted R-squared:  -0.01061 
-# F-statistic: 0.2546 on 1 and 70 DF,  p-value: 0.6154
+# Residual standard error: 0.05352 on 88 degrees of freedom
+# Multiple R-squared:  0.002843,	Adjusted R-squared:  -0.008488 
+# F-statistic: 0.2509 on 1 and 88 DF,  p-value: 0.6177
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+alpha_Pve_wocon <- alpha_Pve %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+alpha_Pve2 <- lm(value_log ~ conc_log, data = alpha_Pve_wocon)
+#view the output of the model
+summary(alpha_Pve2)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = alpha_Pve_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.27724 -0.05646  0.01523  0.06489  0.20708 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.575022   0.011882 -48.394   <2e-16 ***
+#   conc_log     0.002690   0.004213   0.638    0.525    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.09204 on 70 degrees of freedom
+# Multiple R-squared:  0.005787,	Adjusted R-squared:  -0.008416 
+# F-statistic: 0.4075 on 1 and 70 DF,  p-value: 0.5253
+
+# log-log transformed - early linearity
+alpha_Pve_wocon100 <- alpha_Pve_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+alpha_Pve3 <- lm(value_log ~ conc_log, data = alpha_Pve_wocon100)
+#view the output of the model
+summary(alpha_Pve3)
+# OUTPUT: 	Call:
+# lm(formula = log(value) ~ log(conc), data = alpha_Pve_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.27715 -0.05266  0.01322  0.06318  0.20742 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.575109   0.012677 -45.367   <2e-16 ***
+#   conc_log     0.002576   0.006743   0.382    0.704    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.09316 on 52 degrees of freedom
+# Multiple R-squared:  0.002799,	Adjusted R-squared:  -0.01638 
+# F-statistic: 0.1459 on 1 and 52 DF,  p-value: 0.704
 
 
-## ---- 5.10. Alpha ------------------------------------------------------------
-# alpha Pve
-alpha_Pve <- subset(alpha_all, spec == "Pve")
+# log-log transformed - late linearity
+alpha_Pve_wocon01 <- alpha_Pve_wocon %>%
+  subset(conc != "0.1")
+alpha_Pve4 <- lm(value_log ~ conc_log, data = alpha_Pve_wocon01)
+#view the output of the model
+summary(alpha_Pve4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = alpha_Pve_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.26591 -0.05247  0.02130  0.05798  0.20991 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.586349   0.019482 -30.096   <2e-16 ***
+#   conc_log     0.006379   0.006554   0.973    0.335    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.09055 on 52 degrees of freedom
+# Multiple R-squared:  0.01789,	Adjusted R-squared:  -0.0009942 
+# F-statistic: 0.9474 on 1 and 52 DF,  p-value: 0.3349
+
+# Logarithmic
+plot(alpha_Pve$conc, alpha_Pve$value)
+#fit the model
+alpha_Pve5 <- lm(value ~ conc_log, data = alpha_Pve_wocon)
+#view the output of the model
+summary(alpha_Pve5)
+# OUTPUT: Call:
+# lm(formula = value ~ log(conc), data = alpha_Pve_wocon)
+# Residuals:
+#   Min     1Q Median     3Q    Max 
+# -0.138607 -0.033285  0.006113  0.035589  0.128022 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 0.565059   0.006600  85.620   <2e-16 ***
+#   conc_log    0.001465   0.002340   0.626    0.533    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.05112 on 70 degrees of freedom
+# Multiple R-squared:  0.005569,	Adjusted R-squared:  -0.008638 
+# F-statistic: 0.392 on 1 and 70 DF,  p-value: 0.5333
 
 # Exponential
 ks.test(alpha_Pve$value, alpha_Pve$conc, y = "pexp")
@@ -1957,58 +2632,153 @@ ks.test(alpha_Pve$value, alpha_Pve$conc, y = "pexp")
 # data:  alpha_Pve$value
 # D = 0.98889, p-value = 6.661e-16
 # alternative hypothesis: two-sided
-# no correlation
+# no exp correlation
 
-# Logarithmic
-plot(alpha_Pve$conc, alpha_Pve$value)
-#fit the model
-model <- lm(alpha_Pve_wocon$value ~ log(alpha_Pve_wocon$conc))
+
+# AIC test
+models_alpha_Pve <- list(alpha_Pve2, alpha_Pve3, alpha_Pve4)
+model.names <- c('alpha_Pve2', 'alpha_Pve3', 'alpha_Pve4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_alpha_Pve, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# alpha_Pve2 3 -134.87       0.00      1      1 70.61
+# alpha_Pve4 3 -101.72      33.15      0      1 54.10
+# alpha_Pve3 3  -98.65      36.22      0      1 52.56
+
+
+### --- 4.10.2. Spi ------------------------------------------------------------
+# alpha Spi
+alpha_Spi <- subset(alpha, spec == "Spi") %>%
+  mutate(value_log = log(value),
+         conc_log = log(conc))
+
+# untransformed
+alpha_Spi1 <- lm((value) ~ (conc), data = alpha_Spi)
 #view the output of the model
-summary(model)
-# OUTPUT: Call:
-# lm(formula = alpha_Pve_wocon$value ~ log(alpha_Pve_wocon$conc))
+summary(alpha_Spi1)
+# OUTPUT: 	Call:
+# lm(formula = (value) ~ (conc), data = alpha_Spi)
 # Residuals:
-#   Min        1Q    Median        3Q       Max 
-# -0.138607 -0.033285  0.006113  0.035589  0.128022 
+#        Min       1Q   Median       3Q      Max 
+# -0.275674 -0.036443 -0.000562  0.060744  0.134579 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)               0.565059   0.006600  85.620   <2e-16 ***
-#   log(alpha_Pve_wocon$conc) 0.001465   0.002340   0.626    0.533    
+# (Intercept)  0.5167637  0.0100269  51.538   <2e-16 ***
+#   conc        -0.0001010  0.0002231  -0.453    0.652    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# Residual standard error: 0.05112 on 70 degrees of freedom
-# Multiple R-squared:  0.005569,	Adjusted R-squared:  -0.008638 
-# F-statistic: 0.392 on 1 and 70 DF,  p-value: 0.5333
+# Residual standard error: 0.08269 on 88 degrees of freedom
+# Multiple R-squared:  0.002324,	Adjusted R-squared:  -0.009014 
+# F-statistic: 0.205 on 1 and 88 DF,  p-value: 0.6519
+
+# log-log transformed
+# exclude conc 0 mg/l, as log(0) not possible
+alpha_Spi_wocon <- alpha_Spi %>%
+  subset(conc != "0") %>%
+  filter(value_log != "NaN")
+alpha_Spi2 <- lm(value_log ~ conc_log, data = alpha_Spi_wocon)
+#view the output of the model
+summary(alpha_Spi2)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = alpha_Spi_wocon)
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -0.78393 -0.08051  0.01636  0.12040  0.25719 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.6844366  0.0234416 -29.198   <2e-16 ***
+#   conc_log     0.0006476  0.0083124   0.078    0.938    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.1816 on 70 degrees of freedom
+# Multiple R-squared:  8.671e-05,	Adjusted R-squared:  -0.0142 
+# F-statistic: 0.00607 on 1 and 70 DF,  p-value: 0.9381
+
+# log-log transformed - early linearity
+alpha_Spi_wocon100 <- alpha_Spi_wocon %>%
+  subset(conc != "100") %>%
+  filter(value_log != "NaN")
+alpha_Spi3 <- lm(value_log ~ conc_log, data = alpha_Spi_wocon100)
+#view the output of the model
+summary(alpha_Spi3)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = alpha_Spi_wocon100)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.57474 -0.08234  0.00287  0.11591  0.27095 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.677561   0.022719 -29.824   <2e-16 ***
+#   conc_log     0.009606   0.012084   0.795     0.43    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.1669 on 52 degrees of freedom
+# Multiple R-squared:  0.01201,	Adjusted R-squared:  -0.006993 
+# F-statistic: 0.6319 on 1 and 52 DF,  p-value: 0.4303
 
 
-# alpha Spi
-alpha_Spi <- subset(alpha_all, spec == "Spi")
+# log-log transformed - late linearity
+alpha_Spi_wocon01 <- alpha_Spi_wocon %>%
+  subset(conc != "0.1")
+alpha_Spi4 <- lm(value_log ~ conc_log, data = alpha_Spi_wocon01)
+#view the output of the model
+summary(alpha_Spi4)
+# OUTPUT: 	Call:
+# lm(formula = value_log ~ conc_log, data = alpha_Spi_wocon01)
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -0.78494 -0.05358  0.01763  0.11810  0.24248 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.686465   0.040124 -17.108   <2e-16 ***
+#   conc_log     0.001308   0.013498   0.097    0.923    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# Residual standard error: 0.1865 on 52 degrees of freedom
+# Multiple R-squared:  0.0001806,	Adjusted R-squared:  -0.01905 
+# F-statistic: 0.009394 on 1 and 52 DF,  p-value: 0.9232
 
-# Exponential
-ks.test(alpha_Spi$value, alpha_Spi$conc, y = "pexp")
-# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
-# data:  alpha_Spie$value
-# D = 0.98889, p-value = 6.661e-16
-# alternative hypothesis: two-sided
-# no correlation
 
 # Logarithmic
 plot(alpha_Spi$conc, alpha_Spi$value)
 #fit the model
-model <- lm(alpha_Spi_wocon$value ~ log(alpha_Spi_wocon$conc))
+alpha_Spi5 <- lm(value ~ log(conc), data = alpha_Spi_wocon)
 #view the output of the model
-summary(model)
+summary(alpha_Spi5)
 # OUTPUT: Call:
-# lm(formula = alpha_Spi_wocon$value ~ log(alpha_Spi_wocon$conc))
+# lm(formula = value ~ log(conc), data = alpha_Spi_wocon)
 # Residuals:
-#   Min        1Q    Median        3Q       Max 
+#   Min     1Q Median     3Q    Max 
 # -0.282665 -0.046321  0.000879  0.057081  0.140588 
 # Coefficients:
 #   Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)               0.5117148  0.0106483  48.056   <2e-16 ***
-#   log(alpha_Spi_wocon$conc) 0.0004212  0.0037759   0.112    0.911    
+# (Intercept) 0.5117148  0.0106483  48.056   <2e-16 ***
+#   log(conc)   0.0004212  0.0037759   0.112    0.911    
 # ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # Residual standard error: 0.08248 on 70 degrees of freedom
 # Multiple R-squared:  0.0001777,	Adjusted R-squared:  -0.01411 
 # F-statistic: 0.01244 on 1 and 70 DF,  p-value: 0.9115
+
+# Exponential
+ks.test(alpha_Spi$value, alpha_Spi$conc, y = "pexp")
+# OUTPUT: 	Exact one-sample Kolmogorov-Smirnov test
+# data:  alpha_Spi$value
+# D = 0.98889, p-value = 6.661e-16
+# alternative hypothesis: two-sided
+# no exp correlation
+
+
+# AIC test
+models_alpha_Spi <- list(alpha_Spi2, alpha_Spi3, alpha_Spi4)
+model.names <- c('alpha_Spi2', 'alpha_Spi3', 'alpha_Spi4')
+
+# test for best fitted log-log model
+aictab(cand.set = models_alpha_Spi, modnames = model.names)
+# OUTPUT: Model selection based on AICc:
+# K   AICc Delta_AICc AICcWt Cum.Wt     LL
+# alpha_Spi2 3 -37.02       0.00   0.67   0.67 21.69
+# alpha_Spi3 3 -35.64       1.38   0.33   1.00 21.06
+# alpha_Spi4 3 -23.69      13.33   0.00   1.00 15.09
