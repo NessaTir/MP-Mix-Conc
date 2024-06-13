@@ -208,15 +208,6 @@ summary(mod_gam1)
 
 plot(mod_gam1)
 
-# for statistical analyses using LMER and GLMER
-library(lme4)
-# for statistical testing
-library(multcomp)
-
-model_Pve <- glmer(value_log ~ conc_log + (1|col), 
-                   family = poisson, data = surface_Pve)
-
-
 # create graph
 plot_surf_Pve <- ggplot(surface_Pve, aes(x = x_axis, y = value_log, 
                                      color = Color)) +

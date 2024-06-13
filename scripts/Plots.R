@@ -1102,17 +1102,20 @@ mod_gam1 = gam(value ~ s(conc, bs = "cr", k = 5), data = surface_s)
 summary(mod_gam1)
 
 surf_smooth <- 
-  ggplot(surface_s, aes(x = x_axis, y = log(value))) +
+  ggplot(surface_s, aes(x = x_axis, y = log(value), 
+                        color = Color)) +
   scale_color_identity() +
   facet_grid(~ spec, 
              labeller = labeller(spec = spec_labs)) +
-  geom_point(aes(color = Color)) +
-  geom_smooth(aes(x = x_axis, y = log(value), lty = spec), method = "gam",
+  geom_point() +
+  geom_smooth(aes(x = x_axis, y = log(value)), method = "gam",
               formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
               color = "black") +
+  #geom_boxplot(outlier.shape = NA, lwd=0.6, color="black", aes(fill = Color)) +
+  #geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
   scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
                       breaks = c(1, 2, 3, 4, 5)) +
-  scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+  #scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
   scale_linetype_manual(values = c(1,2))+
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
        y = "Tissue growth") +
@@ -1216,6 +1219,9 @@ annotation_vol <- data.frame(
   spec = c("Pve", "Spi"),
   label = c("p = 0.0034, edf = 1.903", 
             "p = 0.0015, edf = 1.246"))
+
+#Alternative values for SPI - recheck
+#"p = 0.0717, edf = 1.763"
 
 
 # add statistics to graph
