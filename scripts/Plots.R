@@ -1839,6 +1839,1774 @@ ggsave("out/gam_correlation.png", plot = gamplots,
 
 }
 
+### --- 4.5.2 Lineplot smooth ------------------------------------------------------
+# ----- SURFACE
+# colored
+{
+  surface_s <- surface_all %>%
+    mutate(x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  mod_gam1 = gam(value ~ s(conc, bs = "cr", k = 5), data = surface_s)
+  summary(mod_gam1)
+  
+  surf_smooth <- 
+    ggplot(surface_s, aes(x = x_axis, y = (value), 
+                          color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    
+    #geom_boxplot(outlier.shape = NA, lwd=0.6, color="black", aes(fill = Color)) +
+    #geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    scale_linetype_manual(values = c(1,2))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Tissue growth") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_text(face = "italic", size = 12),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  surf_smooth
+  
+  # create table with statistical results
+  annotation_surf <- data.frame(
+    parameter = factor(x = c("surface"), 
+                       levels = c("surface")),
+    value = c(60),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.0101, edf = 1.601", 
+              "p = 0.0962, edf = 1.529"))
+  
+  
+  # add statistics to graph
+  SURF_gamplot <- surf_smooth + geom_text(data = annotation_surf,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5)
+  SURF_gamplot
+  
+  # ----- VOLUME
+  # create summary table with cumulative volume growth week 0-12
+  volume_s <-  volume %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    na.omit() %>%
+    # use mean
+    summarise(value = sum(volume_growth))%>% 
+    mutate(parameter = "volume",
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  # create the base graph
+  vol_smooth <- ggplot(volume_s, aes(x = x_axis, y = value, 
+                                     color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(limits = c(0.03, 0.09))+
+    scale_linetype_manual(values = c(1,2))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Volume growth") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  # create table with statistical results
+  annotation_vol <- data.frame(
+    parameter = factor(x = c("volume"), 
+                       levels = c("volume")),
+    value = c(0.08),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.0034, edf = 1.903", 
+              "p = 0.0015, edf = 1.246"))
+  
+  #Alternative values for SPI - recheck
+  #"p = 0.0717, edf = 1.763"
+  
+  
+  # add statistics to graph
+  VOL_gamplot <- vol_smooth + geom_text(data = annotation_vol,
+                                        mapping = aes(x = conc, y = value,
+                                                      label = label),
+                                        color = "black",
+                                        size = 2.5)
+  VOL_gamplot
+  
+  
+  
+  
+  # create summary table with cumulative weight growth week 0-12
+  calcification_s <-  calcification %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    na.omit() %>%
+    # use mean
+    summarise(value = sum(weight_growth))%>% 
+    mutate(parameter = "calcification",
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  
+  calc_smooth <- ggplot(calcification_s, aes(x = x_axis, y = value, 
+                                             color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Calcification") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  # create table with statistical results
+  annotation_calc <- data.frame(
+    parameter = factor(x = c("calcification"), 
+                       levels = c("calcification")),
+    value = c(120),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.130, edf = 1.615", 
+              "p = 0.273, edf = 1.454"))
+  
+  
+  # add statistics to graph
+  CALC_gamplot <- calc_smooth + geom_text(data = annotation_calc,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5)
+  CALC_gamplot
+  
+  
+  # create summary table with relative necrosis after 12 weeks
+  necrosis_s <-  necrosis_per %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = necro_per) %>% 
+    mutate(parameter = "necrosis",
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  necrosis_s <- necrosis_s %>%
+    # remove unnecessary colums
+    dplyr::select(-necro_occured, -treatment, -col, -tank, -tp, -treat) %>% 
+    mutate(value2=value+1)
+  
+  
+  
+  necro_smooth <- ggplot(necrosis_s, aes(x = x_axis, y = value, 
+                                         color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Necrosis") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_necro <- data.frame(
+    parameter = factor(x = c("necrosis"), 
+                       levels = c("necrosis")),
+    value = c(15),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.470, edf = 2.660", 
+              "p = 0.313, edf = 1.808"))
+  
+  NECRO_gamplot <- necro_smooth + geom_text(data = annotation_necro,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5,  nudge_y = 0.2)
+  NECRO_gamplot
+  
+  
+  # create summary table with mean polyp acrtivity over time of exposure
+  polypactivity_s <-  Polyps %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    # na.omit() %>%
+    # use mean
+    summarise(value = mean(ranks))%>% 
+    mutate(parameter = "polypactivity",
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  
+  polyp_smooth <- ggplot(polypactivity_s, aes(x = x_axis, y = value, 
+                                              color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Polypactivity") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_poly <- data.frame(
+    parameter = factor(x = c("polypactivity"), 
+                       levels = c("polypactivity")),
+    value = c(1.1),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p < 0.001, edf = 1.335",
+              "p = 0.002, edf = 1.000"))
+  
+  POLYP_gamplot <- polyp_smooth + geom_text(data = annotation_poly,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5)
+  
+  POLYP_gamplot
+  
+  
+  # create summary table with relative YII after 12 weeks
+  YII_s <-  YII_relative %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = relativeYII) %>% 
+    # use mean
+    mutate(parameter = "YII")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  YII_s <- YII_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  YII_smooth <- ggplot(YII_s, aes(x = x_axis, y = value, 
+                                  color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.2)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Y(II)") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_YII <- data.frame(
+    parameter = factor(x = c("YII"), 
+                       levels = c("YII")),
+    value = c(112),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.002, edf = 3.743",
+              "p = 0.043, edf = 2.411"))
+  
+  YII_gamplot <- YII_smooth + geom_text(data = annotation_YII,
+                                        mapping = aes(x = conc, y = value,
+                                                      label = label),
+                                        color = "black",
+                                        size = 2.5,  nudge_y = 0.1)
+  YII_gamplot
+  
+  
+  # create summary table with relative FvFm after 12 weeks
+  FvFm_s <-  FvFm_relative %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = relativeFv_Fm) %>% 
+    # use mean
+    mutate(parameter = "FvFm")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  FvFm_s <- FvFm_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  FvFm_smooth <- ggplot(FvFm_s, aes(x = x_axis, y = value, 
+                                    color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.2)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "FvFm") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_FvFm <- data.frame(
+    parameter = factor(x = c("FvFm"), 
+                       levels = c("FvFm")),
+    value = c(170),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.059, edf = 1.572",
+              "p = 0.301, edf = 1.359"))
+  
+  FvFm_gamplot <- FvFm_smooth + geom_text(data = annotation_FvFm,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5,  nudge_y = 0.2)
+  FvFm_gamplot
+  
+  
+  # create summary table with rETR after 12 weeks
+  rETR_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = rETRmax) %>% 
+    # use mean
+    mutate(parameter = "rETRmax")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  rETR_s <- rETR_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  rETR_smooth <- ggplot(rETR_s, aes(x = x_axis, y = value, 
+                                    color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "rETR") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_rETR <- data.frame(
+    parameter = factor(x = c("rETRmax"), 
+                       levels = c("rETRmax")),
+    value = c(220),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.657, edf = 1.000",
+              "p = 0.665, edf = 1.000"))
+  
+  rETR_gamplot  <- rETR_smooth + geom_text(data = annotation_rETR,
+                                           mapping = aes(x = conc, y = value,
+                                                         label = label),
+                                           color = "black",
+                                           size = 2.5,  nudge_y = 0.5)
+  rETR_gamplot
+  
+  
+  # create summary table with Ek after 12 weeks
+  Ek_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = Ek) %>% 
+    # use mean
+    mutate(parameter = "Ek")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  
+  Ek_s <- Ek_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  Ek_smooth <- ggplot(Ek_s, aes(x = x_axis, y = value, 
+                                color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Ek") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_Ek <- data.frame(
+    parameter = factor(x = c("Ek"), 
+                       levels = c("Ek")),
+    value = c(400),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.523, edf = 1.000",
+              "p = 0.689, edf = 1.048"))
+  
+  Ek_gamplot <- Ek_smooth + geom_text(data = annotation_Ek,
+                                      mapping = aes(x = conc, y = value,
+                                                    label = label),
+                                      color = "black",
+                                      size = 2.5,  nudge_y = 0.2)
+  Ek_gamplot
+  
+  
+  # create summary table with alpha after 12 weeks
+  alpha_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = alpha) %>% 
+    # use mean
+    mutate(parameter = "alpha")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  alpha_s <- alpha_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  alpha_smooth <- ggplot(alpha_s, aes(x = x_axis, y = value, 
+                                      color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_vline(xintercept = 1:5, 
+               colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
+                          "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
+               alpha=0.5, linewidth = 1.5)+
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("0", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Alpha") +
+    theme_bw()+
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(),
+      strip.background = element_blank(),
+      panel.background = element_rect(colour = "black"),
+      strip.text.x = element_blank(),
+      strip.text.y = element_blank(),
+      axis.title.x = element_text(size = 12),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none")
+  
+  
+  annotation_alpha <- data.frame(
+    parameter = factor(x = c("alpha"), 
+                       levels = c("alpha")),
+    value = c(0.62),
+    conc = c(2.5),
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.528, edf = 1.000",
+              "p = 0.845, edf = 1.000"))
+  
+  
+  
+  
+  
+  ALPHA_gamplot <- alpha_smooth + geom_text(data = annotation_alpha,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5)
+  
+  ALPHA_gamplot
+  
+  
+  
+  
+  
+  gamplots <- # bring all growth plots together
+    SURF_gamplot / VOL_gamplot / CALC_gamplot / NECRO_gamplot / POLYP_gamplot / YII_gamplot / FvFm_gamplot / rETR_gamplot / Ek_gamplot / ALPHA_gamplot
+  
+  gamplots
+  
+  
+  # save graph
+  ggsave("out/gam_correlation_smooth_colored.png", plot = gamplots,
+         scale = 1, width = 10, height = 30, units = c("cm"),
+         dpi = 600, limitsize = TRUE)  
+  
+  
+}
+
+#without colors
+{
+  surface_s <- surface_all %>%
+    mutate(x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  mod_gam1 = gam(value ~ s(conc, bs = "cr", k = 5), data = surface_s)
+  summary(mod_gam1)
+  
+  surf_smooth <- 
+    ggplot(surface_s, aes(x = x_axis, y = (value), 
+                          color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    
+    #geom_boxplot(outlier.shape = NA, lwd=0.6, color="black", aes(fill = Color)) +
+    #geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    scale_linetype_manual(values = c(1,2))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Tissue growth") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_text(face = "italic", size = 12),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  surf_smooth
+  
+  # create table with statistical results
+  annotation_surf <- data.frame(
+    parameter = factor(x = c("surface"), 
+                       levels = c("surface")),
+    value = c(60),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.0101, edf = 1.601", 
+              "p = 0.0962, edf = 1.529"))
+  
+  
+  # add statistics to graph
+  SURF_gamplot <- surf_smooth + geom_text(data = annotation_surf,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5)
+  SURF_gamplot
+  
+  # ----- VOLUME
+  # create summary table with cumulative volume growth week 0-12
+  volume_s <-  volume %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    na.omit() %>%
+    # use mean
+    summarise(value = sum(volume_growth))%>% 
+    mutate(parameter = "volume",
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  # create the base graph
+  vol_smooth <- ggplot(volume_s, aes(x = x_axis, y = value, 
+                                     color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(limits = c(0.03, 0.09))+
+    scale_linetype_manual(values = c(1,2))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Volume growth") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  # create table with statistical results
+  annotation_vol <- data.frame(
+    parameter = factor(x = c("volume"), 
+                       levels = c("volume")),
+    value = c(0.08),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.0034, edf = 1.903", 
+              "p = 0.0015, edf = 1.246"))
+  
+  #Alternative values for SPI - recheck
+  #"p = 0.0717, edf = 1.763"
+  
+  
+  # add statistics to graph
+  VOL_gamplot <- vol_smooth + geom_text(data = annotation_vol,
+                                        mapping = aes(x = conc, y = value,
+                                                      label = label),
+                                        color = "black",
+                                        size = 2.5)
+  VOL_gamplot
+  
+  
+  
+  
+  # create summary table with cumulative weight growth week 0-12
+  calcification_s <-  calcification %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    na.omit() %>%
+    # use mean
+    summarise(value = sum(weight_growth))%>% 
+    mutate(parameter = "calcification",
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  
+  calc_smooth <- ggplot(calcification_s, aes(x = x_axis, y = value, 
+                                             color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Calcification") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  # create table with statistical results
+  annotation_calc <- data.frame(
+    parameter = factor(x = c("calcification"), 
+                       levels = c("calcification")),
+    value = c(120),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.130, edf = 1.615", 
+              "p = 0.273, edf = 1.454"))
+  
+  
+  # add statistics to graph
+  CALC_gamplot <- calc_smooth + geom_text(data = annotation_calc,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5)
+  CALC_gamplot
+  
+  
+  # create summary table with relative necrosis after 12 weeks
+  necrosis_s <-  necrosis_per %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = necro_per) %>% 
+    mutate(parameter = "necrosis",
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  necrosis_s <- necrosis_s %>%
+    # remove unnecessary colums
+    dplyr::select(-necro_occured, -treatment, -col, -tank, -tp, -treat) %>% 
+    mutate(value2=value+1)
+  
+  
+  
+  necro_smooth <- ggplot(necrosis_s, aes(x = x_axis, y = value, 
+                                         color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Necrosis") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_necro <- data.frame(
+    parameter = factor(x = c("necrosis"), 
+                       levels = c("necrosis")),
+    value = c(15),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.470, edf = 2.660", 
+              "p = 0.313, edf = 1.808"))
+  
+  NECRO_gamplot <- necro_smooth + geom_text(data = annotation_necro,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5,  nudge_y = 0.2)
+  NECRO_gamplot
+  
+  
+  # create summary table with mean polyp acrtivity over time of exposure
+  polypactivity_s <-  Polyps %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # separate by species and concentration
+    group_by(ID, spec, conc) %>%
+    # ignore NAs
+    # na.omit() %>%
+    # use mean
+    summarise(value = mean(ranks))%>% 
+    mutate(parameter = "polypactivity",
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E")) 
+  
+  
+  polyp_smooth <- ggplot(polypactivity_s, aes(x = x_axis, y = value, 
+                                              color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Polypactivity") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_poly <- data.frame(
+    parameter = factor(x = c("polypactivity"), 
+                       levels = c("polypactivity")),
+    value = c(1.1),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p < 0.001, edf = 1.335",
+              "p = 0.002, edf = 1.000"))
+  
+  POLYP_gamplot <- polyp_smooth + geom_text(data = annotation_poly,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5)
+  
+  POLYP_gamplot
+  
+  
+  # create summary table with relative YII after 12 weeks
+  YII_s <-  YII_relative %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = relativeYII) %>% 
+    # use mean
+    mutate(parameter = "YII")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  YII_s <- YII_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  YII_smooth <- ggplot(YII_s, aes(x = x_axis, y = value, 
+                                  color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.2)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Y(II)") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_YII <- data.frame(
+    parameter = factor(x = c("YII"), 
+                       levels = c("YII")),
+    value = c(112),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.002, edf = 3.743",
+              "p = 0.043, edf = 2.411"))
+  
+  YII_gamplot <- YII_smooth + geom_text(data = annotation_YII,
+                                        mapping = aes(x = conc, y = value,
+                                                      label = label),
+                                        color = "black",
+                                        size = 2.5,  nudge_y = 0.1)
+  YII_gamplot
+  
+  
+  # create summary table with relative FvFm after 12 weeks
+  FvFm_s <-  FvFm_relative %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = relativeFv_Fm) %>% 
+    # use mean
+    mutate(parameter = "FvFm")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  FvFm_s <- FvFm_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  FvFm_smooth <- ggplot(FvFm_s, aes(x = x_axis, y = value, 
+                                    color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.2)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "FvFm") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_FvFm <- data.frame(
+    parameter = factor(x = c("FvFm"), 
+                       levels = c("FvFm")),
+    value = c(170),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.059, edf = 1.572",
+              "p = 0.301, edf = 1.359"))
+  
+  FvFm_gamplot <- FvFm_smooth + geom_text(data = annotation_FvFm,
+                                          mapping = aes(x = conc, y = value,
+                                                        label = label),
+                                          color = "black",
+                                          size = 2.5,  nudge_y = 0.2)
+  FvFm_gamplot
+  
+  
+  # create summary table with rETR after 12 weeks
+  rETR_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = rETRmax) %>% 
+    # use mean
+    mutate(parameter = "rETRmax")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  rETR_s <- rETR_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  rETR_smooth <- ggplot(rETR_s, aes(x = x_axis, y = value, 
+                                    color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "rETR") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_rETR <- data.frame(
+    parameter = factor(x = c("rETRmax"), 
+                       levels = c("rETRmax")),
+    value = c(220),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.657, edf = 1.000",
+              "p = 0.665, edf = 1.000"))
+  
+  rETR_gamplot  <- rETR_smooth + geom_text(data = annotation_rETR,
+                                           mapping = aes(x = conc, y = value,
+                                                         label = label),
+                                           color = "black",
+                                           size = 2.5,  nudge_y = 0.5)
+  rETR_gamplot
+  
+  
+  # create summary table with Ek after 12 weeks
+  Ek_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = Ek) %>% 
+    # use mean
+    mutate(parameter = "Ek")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  
+  Ek_s <- Ek_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  Ek_smooth <- ggplot(Ek_s, aes(x = x_axis, y = value, 
+                                color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Ek") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  annotation_Ek <- data.frame(
+    parameter = factor(x = c("Ek"), 
+                       levels = c("Ek")),
+    value = c(400),
+    conc = c(2.5),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.523, edf = 1.000",
+              "p = 0.689, edf = 1.048"))
+  
+  Ek_gamplot <- Ek_smooth + geom_text(data = annotation_Ek,
+                                      mapping = aes(x = conc, y = value,
+                                                    label = label),
+                                      color = "black",
+                                      size = 2.5,  nudge_y = 0.2)
+  Ek_gamplot
+  
+  
+  # create summary table with alpha after 12 weeks
+  alpha_s <-  rETR_i %>%
+    # select only the last timepoint
+    filter(tp=="3") %>%
+    # ignore NAs
+    na.omit() %>%
+    #rename column enrty
+    rename(value = alpha) %>% 
+    # use mean
+    mutate(parameter = "alpha")   %>% 
+    #keep only relevant columns
+    dplyr::select(ID, spec, conc, value, parameter)
+  
+  alpha_s <- alpha_s %>%
+    mutate(conc = as.numeric(conc),
+           x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  
+  alpha_smooth <- ggplot(alpha_s, aes(x = x_axis, y = value, 
+                                      color = Color)) +
+    scale_color_identity() +
+    facet_grid(~ spec, 
+               labeller = labeller(spec = spec_labs)) +
+    #geom_point() +
+    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black", lty=2) +
+    scale_x_continuous(labels= c("0", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Alpha") +
+    theme_bw()+
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(),
+      strip.background = element_blank(),
+      panel.background = element_rect(colour = "black"),
+      strip.text.x = element_blank(),
+      strip.text.y = element_blank(),
+      axis.title.x = element_text(size = 12),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none")
+  
+  
+  annotation_alpha <- data.frame(
+    parameter = factor(x = c("alpha"), 
+                       levels = c("alpha")),
+    value = c(0.62),
+    conc = c(2.5),
+    spec = c("Pve", "Spi"),
+    label = c("p = 0.528, edf = 1.000",
+              "p = 0.845, edf = 1.000"))
+  
+  
+  
+  
+  
+  ALPHA_gamplot <- alpha_smooth + geom_text(data = annotation_alpha,
+                                            mapping = aes(x = conc, y = value,
+                                                          label = label),
+                                            color = "black",
+                                            size = 2.5)
+  
+  ALPHA_gamplot
+  
+  
+  
+  
+  
+  gamplots <- # bring all growth plots together
+    SURF_gamplot / VOL_gamplot / CALC_gamplot / NECRO_gamplot / POLYP_gamplot / YII_gamplot / FvFm_gamplot / rETR_gamplot / Ek_gamplot / ALPHA_gamplot
+  
+  gamplots
+  
+  
+  # save graph
+  ggsave("out/gam_correlation_smooth.png", plot = gamplots,
+         scale = 1, width = 10, height = 30, units = c("cm"),
+         dpi = 600, limitsize = TRUE)  
+  
+  
+}
+
+### --- 4.5.3 Alternative Smooth show ------------------------------------------------------
+# ----- SURFACE
+#Pve
+  surface_s <- surface_all %>%
+    mutate(x_axis = case_when(conc == "0" ~ "1",
+                              conc == "0.1" ~ "2",
+                              conc == "1" ~ "3",
+                              conc == "10" ~ "4",
+                              conc == "100" ~ "5"),
+           x_axis = as.numeric(x_axis),
+           Color = case_when(conc == "0" ~  "#4A8696",
+                             conc == "0.1" ~ "#FFED85",
+                             conc == "1" ~ "#E09F3E",
+                             conc == "10" ~ "#9E2A2B",
+                             conc == "100" ~ "#540B0E"))
+  
+  mod_gam1 = gam(value ~ s(conc, bs = "cr", k = 5), data = surface_s)
+  summary(mod_gam1)
+  
+  surf_smooth <- 
+    surface_s %>% 
+    filter(spec=="Pve") %>% 
+    ggplot(aes(x = x_axis, y = value, fill=Color)) +
+    scale_fill_manual(name="Concentration", labels = c("0", "0.1", "1", "10", "100"),
+                      values=c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E"))+
+    scale_color_identity() +
+    geom_boxplot(outlier.shape = NA, lwd=0.6,  color="black", aes(fill = Color)) +
+    geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(limits=c(-100,125))+
+    labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+         y = "Tissue growth") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_text(face = "italic", size = 12),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")
+  
+  
+  surf_smooth
+  
+  # create table with statistical results
+  annotation_surf <- data.frame(
+    parameter = factor(x = c("surface"), 
+                       levels = c("surface")),
+    value = c(3),
+    conc = c(3),
+    hjustvar = 0,
+    vjustvar = 1,
+    spec = "Pve",
+    label = "p = 0.0101, edf = 1.601")
+  
+  
+  #spec = c("Pve", "Spi"),
+  #label = c("p = 0.0101, edf = 1.601", 
+  #          "p = 0.0962, edf = 1.529"))
+
+plot_inset <- 
+  surface_s %>% 
+  filter(spec=="Pve") %>% 
+  ggplot(aes(x = x_axis, y = log(value), 
+                        color = Color)) +
+    scale_color_identity() +
+    geom_smooth(aes(x = x_axis, y = log(value)), method = "gam",
+                formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+                color = "black") +
+    scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                       breaks = c(1, 2, 3, 4, 5)) +
+    scale_y_continuous(expand = expansion(mult = c(0.01, 0.1)))+
+    scale_linetype_manual(values = c(1,2))+
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.background = element_rect(colour = "black"),
+          strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 10),
+          axis.text.x = element_blank(),
+          legend.position = "none")+
+  geom_text(data = annotation_surf,
+            mapping = aes(x = conc, y = value,
+                          label = label),
+            color = "black",
+            size = 2.5,  nudge_y = 1)
+plot_inset  
+  
+
+
+surf_smooth_Pve <-
+  surf_smooth + 
+  annotation_custom(grob=ggplotGrob(plot_inset),
+                    ymin = 80, ymax=130, xmin=2, xmax=5.5)
+
+surf_smooth_Pve
+
+#Spi
+surface_s <- surface_all %>%
+  mutate(x_axis = case_when(conc == "0" ~ "1",
+                            conc == "0.1" ~ "2",
+                            conc == "1" ~ "3",
+                            conc == "10" ~ "4",
+                            conc == "100" ~ "5"),
+         x_axis = as.numeric(x_axis),
+         Color = case_when(conc == "0" ~  "#4A8696",
+                           conc == "0.1" ~ "#FFED85",
+                           conc == "1" ~ "#E09F3E",
+                           conc == "10" ~ "#9E2A2B",
+                           conc == "100" ~ "#540B0E"))
+
+mod_gam1 = gam(value ~ s(conc, bs = "cr", k = 5), data = surface_s)
+summary(mod_gam1)
+
+surf_smooth <- 
+  surface_s %>% 
+  filter(spec=="Spi") %>% 
+  ggplot(aes(x = x_axis, y = value, fill=Color)) +
+  scale_fill_manual(name="Concentration", labels = c("0", "0.1", "1", "10", "100"),
+                    values=c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E"))+
+  scale_color_identity() +
+  geom_boxplot(outlier.shape = NA, lwd=0.6,  color="black", aes(fill = Color)) +
+  geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
+  scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                     breaks = c(1, 2, 3, 4, 5)) +
+  scale_y_continuous(limits=c(-100,125))+
+  labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
+       y = "Tissue growth") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.background = element_rect(colour = "black"),
+        strip.text.x = element_text(face = "italic", size = 12),
+        strip.text.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 10),
+        axis.text.x = element_blank(),
+        legend.position = "none")
+
+
+surf_smooth
+
+# create table with statistical results
+annotation_surf <- data.frame(
+  parameter = factor(x = c("surface"), 
+                     levels = c("surface")),
+  value = c(3),
+  conc = c(3),
+  hjustvar = 0,
+  vjustvar = 1,
+  spec = "Spi",
+  label = "p = 0.0101, edf = 1.601")
+
+
+#spec = c("Spi", "Spi"),
+#label = c("p = 0.0101, edf = 1.601", 
+#          "p = 0.0962, edf = 1.529"))
+
+plot_inset <- 
+  surface_s %>% 
+  filter(spec=="Spi") %>% 
+  ggplot(aes(x = x_axis, y = log(value), 
+             color = Color)) +
+  scale_color_identity() +
+  geom_smooth(aes(x = x_axis, y = log(value)), method = "gam",
+              formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
+              color = "black") +
+  scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
+                     breaks = c(1, 2, 3, 4, 5)) +
+  scale_y_continuous(expand = expansion(mult = c(0.01, 0.1)))+
+  scale_linetype_manual(values = c(1,2))+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.background = element_rect(colour = "black"),
+        strip.text.x = element_blank(),
+        strip.text.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 10),
+        axis.text.x = element_blank(),
+        legend.position = "none")+
+  geom_text(data = annotation_surf,
+            mapping = aes(x = conc, y = value,
+                          label = label),
+            color = "black",
+            size = 2.5,  nudge_y = 1)
+plot_inset  
+
+
+
+surf_smooth_Spi <-
+  surf_smooth + 
+  annotation_custom(grob=ggplotGrob(plot_inset),
+                    ymin = 80, ymax=130, xmin=2, xmax=5.5)
+
+surf_smooth_Spi
+  
+  
+
+# combine plots
+
+surf_smoot <- ggarrange(surf_smooth_Pve, surf_smooth_Spi)
+
 
 # ----- 5. Supplements  --------------------------------------------------------
 ## ---- 5.1. MP concentrations -------------------------------------------------
