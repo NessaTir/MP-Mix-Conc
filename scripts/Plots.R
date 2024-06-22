@@ -1870,7 +1870,7 @@ ggsave("out/gam_correlation.png", plot = gamplots,
                colour = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E", 
                           "#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"),
                alpha=0.5, linewidth = 1.5)+
-    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+    geom_smooth(aes(x = x_axis, y = value, lty = spec), method = "gam",
                 formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
                 color = "black") +
     
@@ -2663,16 +2663,15 @@ ggsave("out/gam_correlation.png", plot = gamplots,
     facet_grid(~ spec, 
                labeller = labeller(spec = spec_labs)) +
     #geom_point() +
-    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+    geom_smooth(aes(x = x_axis, y = value, lty = spec), method = "gam",
                 formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
                 color = "black") +
-    
+    scale_linetype_manual(values = c(1,2))+
     #geom_boxplot(outlier.shape = NA, lwd=0.6, color="black", aes(fill = Color)) +
     #geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
     scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
                        breaks = c(1, 2, 3, 4, 5)) +
     scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
-    scale_linetype_manual(values = c(1,2))+
     labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
          y = "Tissue growth") +
     theme_bw() +
