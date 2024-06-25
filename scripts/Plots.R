@@ -3636,13 +3636,35 @@ ggsave("out/Concentrations.png", plot = Conc_curve,
        dpi = 600, limitsize = TRUE)
 
 # display relationship between added mg/L and measured ppl
-Conc <- 
+Concentrations_mean <-
+Concentrations %>% 
+  # separate by species, concentration and timepoint
+  group_by(conc) %>%
+  # ignore NAs
+  na.omit() %>%
+  # use mean
+  summarise(mean = mean(per_L), 
+            # include sd 
+            sd = sd(per_L)) %>% 
+  # use cumulative sum of growth parameter
+  mutate(mean = cumsum(mean))
+
+Concentrations <- full_join(Concentrations, Concentrations_mean, by = "conc")
+
+#Conc <- 
   Concentrations %>% 
   filter(conc!= "0") %>% 
   ggplot(aes(conc, per_L, color = as.factor(conc))) +
 #  facet_grid(parameter~spec, scales="free", 
  #            labeller = labeller(spec = spec_labs)) +
     geom_jitter(width = 0.2) +
+    #geom_line(aes(x = conc, y = mean, group = conc, color = "black"), 
+    #          size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
+    #geom_errorbar(aes(x = conc, ymin = mean-sd, ymax = mean+sd, 
+    #                color="black", width = 0.2), size = 1,
+    #            position = position_dodge(width = 0.2)) +
+    #geom_point(aes(x = conc, y = mean, color = "black"), 
+    #           position = position_dodge(width=0.2), size = 1.5) +
     stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
                  geom="errorbar", width=0.2, col="black")+
     stat_summary(fun.y=mean, geom="point", pch=20, size=3, col="black")+
@@ -3650,7 +3672,9 @@ Conc <-
                      values = c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B","#540B0E"))  +
   stat_poly_line(color = "black") +
   scale_x_continuous(trans='log', labels= c("0.1", "1", "10", "100"), breaks = c(0.1, 1, 10, 100)) +
-  scale_y_continuous(trans='log', labels= c("10", "100", "1,000", "10,000"), breaks = c(10, 100, 1000, 10000)) +
+  scale_y_continuous(trans='log', 
+                     labels= c("0.1", "0", "10", "100", "1,000", "10,000"), 
+                     breaks = c(0.1, 0, 10, 100, 1000, 10000)) +
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
        y = expression(paste("Particles ","·", L^-1))) +
   theme_bw()+
