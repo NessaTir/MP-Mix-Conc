@@ -469,7 +469,7 @@ surface_all <-  surface %>%
          conc = as.numeric(conc)) 
 
 # write it into .csv
-write_csv2(surface_all, "processed/surface_all.csv")
+#write_csv2(surface_all, "processed/surface_all.csv")
 
 # create the base graph
 surf_cor <- ggplot(surface_all, aes(conc, value, color = as.factor(conc))) +
@@ -531,7 +531,7 @@ volume_all <-  volume %>%
          conc = as.numeric(conc)) 
 
 # write it into .csv
-write_csv2(volume_all, "processed/volume_all.csv")
+#write_csv2(volume_all, "processed/volume_all.csv")
 
 # create the base graph
 vol_cor <- ggplot(volume_all, aes(conc, value, color = as.factor(conc))) +
@@ -2741,13 +2741,15 @@ ggsave("out/gam_correlation.png", plot = gamplots,
     facet_grid(~ spec, 
                labeller = labeller(spec = spec_labs)) +
     #geom_point() +
-    geom_smooth(aes(x = x_axis, y = value), method = "gam",
+    geom_smooth(aes(x = x_axis, y = value, lty = spec), method = "gam",
                 formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),
                 color = "black") +
+    scale_linetype_manual(values = c(1,2))+
+    #geom_boxplot(outlier.shape = NA, lwd=0.6, color="black", aes(fill = Color)) +
+    #geom_point(pch = 21, position = position_jitterdodge(), aes(fill = Color))+
     scale_x_continuous(labels= c("control", "0.1", "1", "10", "100"), 
                        breaks = c(1, 2, 3, 4, 5)) +
-    scale_y_continuous(limits = c(0.03, 0.09))+
-    scale_linetype_manual(values = c(1,2))+
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.35)))+
     labs(x = expression(paste("Treatment ", mg, "·", L^-1)), 
          y = "Volume growth") +
     theme_bw() +
@@ -2773,7 +2775,7 @@ ggsave("out/gam_correlation.png", plot = gamplots,
     vjustvar = 1,
     spec = c("Pve", "Spi"),
     label = c("p = 0.0034, edf = 1.903", 
-              "p = 0.0015, edf = 1.246"))
+              "p = 0.0717, edf = 1.763"))
   
   #Alternative values for SPI - recheck
   #"p = 0.0717, edf = 1.763"
@@ -3608,6 +3610,21 @@ surf_smoot <- ggarrange(surf_smooth_Pve, surf_smooth_Spi)
 
 
 # ----- 5. Supplements  --------------------------------------------------------
+##----- Build up theme 
+# Create labels for species
+spec_labs <- c("P. verrucosa", "S. pistillata")
+names(spec_labs) <- c("Pve", "Spi")
+
+# Create labels for treatments
+
+treat_labs <-  c("0", "0.1", "1", "10", "100")
+names(treat_labs) <- c("control", "0.1", "1", "10", "100")
+
+# Create a color scheme
+color_scheme <- c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E")
+
+alphavalues <- c(0.005, 0.3, 0.6, 1)
+
 ## ---- 5.1. MP concentrations -------------------------------------------------
 Conc_curve <- ggplot(Concentrations, aes(x = days, y = per_L)) +
   geom_smooth(aes(x = days, y = per_L, group = conc, color = conc, fill = conc)) + 
@@ -3651,7 +3668,7 @@ Concentrations %>%
 
 Concentrations <- full_join(Concentrations, Concentrations_mean, by = "conc")
 
-#Conc <- 
+Conc <- 
   Concentrations %>% 
   filter(conc!= "0") %>% 
   ggplot(aes(conc, per_L, color = as.factor(conc))) +
@@ -3688,6 +3705,8 @@ Concentrations <- full_join(Concentrations, Concentrations_mean, by = "conc")
     axis.title.x = element_text(size = 10),
     axis.title.y = element_text(size = 10),
     legend.position = "none")
+
+Conc
 
   Concentrations2 <-
   Concentrations %>% 
