@@ -37,6 +37,9 @@ library("patchwork")
 # for annotations in heatmap
 library("ggtext")
 
+# for FTIR Visualization
+library(skimr)
+
 
 # ----- 3. Read in needed data files ------------------------------------------- 
 ## ---- 3.2. Coral Information -------------------------------------------------
@@ -3771,6 +3774,70 @@ mean_Size <- MP_size %>% # table
 
 # write it into .csv
 write_csv2(mean_Size, "out/mean_MP_size.csv")
+
+
+## ---- 5.3. Visualization of FTIR Spectra -------------------------------------
+
+# Load Data
+pa <- read.csv(file = "in/EXTRACT_PA.0.dpt", header = FALSE)
+pe <- read.csv(file = "in/EXTRACT_PE.0.dpt", header = FALSE)
+pet <- read.csv(file = "in/EXTRACT_PET.0.dpt", header = FALSE)
+pp <- read.csv(file = "in/EXTRACT_PP.0.dpt", header = FALSE)
+ps <- read.csv(file = "in/EXTRACT_PS.0.dpt", header = FALSE)
+pvc <- read.csv(file = "in/EXTRACT_PVC.0.dpt", header = FALSE)
+
+## Plot all polymer types together
+
+### Make data tidy
+pvc <- pvc + 0.8
+ps <- ps + 0.6
+pp <- pp + 0.4
+pa <- pa + 0.2
+pe <- pe + 1
+
+# df <- rbind(pet, pa, pp, ps, pvc, pe)
+df <- rbind(pe, pvc, ps, pp, pa, pet)
+df %>% 
+  rename("Wavenumber" = V1) %>% 
+  rename("Absorption" = V2) -> df
+
+sample <- factor(c(rep("PE", 1889), rep("PVC", 1889), rep("PS", 1889), rep("PP", 1889), rep("PA", 1889), rep("PET", 1889)))
+
+spectra <- tibble(df, sample)
+
+# level polymers 
+spectra$sample <- factor(spectra$sample,
+                         levels = c("PE", "PVC", "PS", "PP", "PA", "PET"))
+
+### Format plot
+theme <- theme(panel.border = element_rect(linetype = "solid", fill = NA),
+               panel.background = element_rect(fill = NA),
+               axis.text = element_text(size = 10),
+               axis.text.y = element_blank(),
+               axis.ticks.y = element_blank(),
+               axis.title.x = element_text(size = rel(1.1)),
+               axis.title.y = element_text(size = rel(1.1)),
+               legend.position = "right",
+               legend.key = element_blank())
+
+### Plot data
+p1 <- ggplot(data = spectra,
+             mapping = aes(x = Wavenumber,
+                           y = Absorption,
+                           color = sample)) +
+  geom_line(aes(col = sample), size = 1) +
+  labs(x = expression(Wavenumber / cm^{-1}),
+       y = "Absorption / a. u.\n") +
+  scale_color_manual(name = "", 
+                     values = c("PE" = "#0A0A0A", "PVC" = "#6F6E69", "PS" = "#D3D2C7", 
+                                "PP" = "#EBF779", "PET" = "#2D2DB4","PA" = "#C23E3E"),                      
+                     breaks = c("PE", "PVC", "PS", "PP", "PA", "PET")) +
+ # scale_y_reverse(scales="free") +
+  coord_cartesian(ylim = c(0, 1.3), xlim = c(3490, 950))
+
+(p1 <- p1 + theme)
+
+ggsave("out/FTIR-Spectra.png", plot = p1, width = 7, height = 6)
 
 
 # ----- 6. Write tables --------------------------------------------------------
