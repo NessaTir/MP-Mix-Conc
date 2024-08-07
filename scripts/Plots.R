@@ -126,7 +126,6 @@ names(treat_labs) <- c("control", "0.1", "1", "10", "100")
 # Create a color scheme
 color_scheme <- c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E")
 
-alphavalues <- c(0.005, 0.3, 0.6, 1)
 
 
 ## ---- 4.2. Growth parameters -------------------------------------------------
@@ -278,19 +277,25 @@ necrosis$cat <- factor(necrosis$cat,
 cat_labs <-  c("", "low", "moderate", "high")
 names(cat_labs) <- c("none", "low", "moderate", "high")
 
+alphavalues <- c(0.25, 0.5, 1)
+
 # Create a color scheme with switched order, so it's correct in the graph
 color_scheme_2 <- c("#540B0E", "#9E2A2B", "#E09F3E", "#FFED85", "#4A8696")
 
-necro_plot <- necrosis %>% 
+necrosis_2 <- necrosis %>%
+  filter(cat != "none")
+
+necro_plot <- necrosis_2 %>% 
   filter(tp =="3") %>% 
   ggplot(aes(x=treat, y=prop, color = fct_rev(treat)))+
-  geom_bar(stat = "identity", aes(alpha=cat)) +
+  geom_bar(stat="identity", aes(alpha=cat), size=0.8) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   scale_alpha_manual("cat", values=alphavalues,
                      labels = cat_labs) +
   scale_color_manual(guide = 'none', values = color_scheme_2)+
   scale_x_discrete(labels = treat_labs) +
+  scale_y_continuous(limits = c(0, 100)) +
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)),
        y = "Necrosis (%)",
        title = "") +
