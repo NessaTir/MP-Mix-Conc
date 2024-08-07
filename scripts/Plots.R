@@ -283,13 +283,13 @@ color_scheme_2 <- c("#540B0E", "#9E2A2B", "#E09F3E", "#FFED85", "#4A8696")
 
 necro_plot <- necrosis %>% 
   filter(tp =="3") %>% 
-  ggplot(aes(x=treat, y=prop, fill= fct_rev(treat)))+
+  ggplot(aes(x=treat, y=prop, color = fct_rev(treat)))+
   geom_bar(stat = "identity", aes(alpha=cat)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   scale_alpha_manual("cat", values=alphavalues,
                      labels = cat_labs) +
-  scale_fill_manual(guide = 'none', values = color_scheme_2)+
+  scale_color_manual(guide = 'none', values = color_scheme_2)+
   scale_x_discrete(labels = treat_labs) +
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)),
        y = "Necrosis (%)",
