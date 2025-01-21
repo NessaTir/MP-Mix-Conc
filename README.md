@@ -1,20 +1,18 @@
 # MP Mixture Concentration experiment
-In this repository you'll find all raw data as well as the code we used to process these for our manuscript **MP-Mix-Conc**.
+In this repository you'll find all raw data as well as the code we used to process these for our paper [**Increasing microplastic concentrations have nonlinear impacts on the physiology of reef-building corals**](https://doi.org/10.1016/j.scitotenv.2024.178318).
 
-We analyzed
-(I) the health of the coral host (i.e., growth rates: tissue area, volume, calcification; and necrosis),
-(II) the behavior of the coral host (i.e., polyp activity),
-and (III) the photosynthetic efficiency of the corals’ photosymbionts (i.e., effective quantum yield and relative electron transport rate)
-of the reef-building corals _Pocillopora verrucosa_ and _Stylophora pistillata_. 
+(I) We investigated the concentration-dependent effects of the MP mixture on the physiology of the coral host (i.e., growth rates of tissue area and volume, calcification, necrosis, and polyp activity)
+and the photosynthetic efficiency of the photosymbionts (i.e., effective quantum yield, the maximum quantum yield, relative electron transport rate, minimum saturating irradiance, and efficiency of light capture).
+(II) We analyzed the dose-response relationships to determine whether they follow linear or more complex patterns. 
+
 For the statistical assessment and data visualization we used the statistical **R** Project for Statistical Computing Software together with the graphical user interface **RStudio**.
-System info of R, RStudio, and a list of all used packages can be found [here] --> Link 
 
 ## General terminology
 Sampling timepoints are referred to as:
-   t0 - before the addition of microplastic
-   t1 - 4 weeks after the addition of microplastic
-   t2 - 8 weeks after the addition of microplastic
-   t3 - 12 weeks after the addition of microplastic
+   t0 - before the addition of microplastics
+   t1 - 4 weeks after the addition of microplastics
+   t2 - 8 weeks after the addition of microplastics
+   t3 - 12 weeks after the addition of microplastics
    
 Used coral species are referred to as:
    Pve - _Pocillopora verrucosa_ 
@@ -29,8 +27,8 @@ Used microplastic polymers:
    PA -  yellow polyamide fibers
 
 Used microplastic concentrations:
-
-
-## Cite the code
-In case you want to cite our code, you can use this DOI for the latest released version of this repository:    
-DOI--> Link
+   control -               0 mg/L
+   low pollution -       0.1 mg/L
+   moderate pollution -    1 mg/L
+   high pollution -       10 mg/L
+   extreme pollution -   100 mg/L
