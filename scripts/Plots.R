@@ -138,7 +138,10 @@ surface_plot <- surface %>%
   # use mean
   summarise(mean = mean(surface_growth), 
             # include sd 
-            sd = sd(surface_growth)) %>% 
+            sd = sd(surface_growth),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>% 
   # use cumulative sum of growth parameter
   mutate(mean = cumsum(mean)) %>%
   ggplot() + 
@@ -148,7 +151,7 @@ surface_plot <- surface %>%
             size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
   scale_color_manual(values = color_scheme) +
-  geom_errorbar(aes(x = time, ymin = mean-sd, ymax = mean+sd, 
+  geom_errorbar(aes(x = time, ymin = mean-se, ymax = mean+se, 
                     color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
                 position = position_dodge(width = 0.2)) +
   geom_point(aes(x = time, y = mean, color = conc), 
@@ -186,7 +189,10 @@ volume_plot <- volume %>%
   # use mean
   summarise(mean = mean(volume_growth),
             # include sd
-            sd = sd(volume_growth)) %>%
+            sd = sd(volume_growth),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>%
   # use cumulative sum of growth parameter
   mutate(mean = cumsum(mean)) %>%
   ggplot() + 
@@ -195,7 +201,7 @@ volume_plot <- volume %>%
             size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
   scale_color_manual(values = color_scheme) +
-  geom_errorbar(aes(x = time, ymin = mean-sd, ymax = mean+sd, 
+  geom_errorbar(aes(x = time, ymin = mean-se, ymax = mean+se, 
                     color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
                 position = position_dodge(width = 0.2)) +
   geom_point(aes(x =time, y = mean, color = conc), 
@@ -230,7 +236,10 @@ weight_plot <- calcification %>%
   # use mean
   summarise(mean = mean(weight_growth),
             # include sd
-            sd = sd(weight_growth)) %>%
+            sd = sd(weight_growth),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>%
   # use cumulative sum of growth parameter
   mutate(mean = cumsum(mean)) %>%
   ggplot() + 
@@ -239,22 +248,22 @@ weight_plot <- calcification %>%
             size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
   scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) + 
   scale_color_manual(values = color_scheme) +
-  geom_errorbar(aes(x = time, ymin = mean-sd, ymax = mean+sd, 
+  geom_errorbar(aes(x = time, ymin = mean-se, ymax = mean+se, 
                     color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
                 position = position_dodge(width = 0.2)) +
-  geom_point(aes(x =time, y = mean, color = conc), 
+  geom_point(aes(x = time, y = mean, color = conc), 
              position = position_dodge(width=0.2), size = 1.5) +
   labs(color = "Treatment [mg/l]", fill = "Treatment [mg/l]") +
   ylab(expression(atop(Cumulative~calcification, rate~(mg~cm^-2)))) +
   #ylab("Cumulative calcification [mg/cm²]") +
-  xlab("Weeks of exposure") +
+ # xlab("Weeks of exposure") +
   # design theme
   theme_classic() +
   theme(panel.background = element_rect(color = "black"),
         strip.background = element_blank(),
         strip.text.x = element_blank(), # remove species labels
-        axis.text.x = element_text(size = 10),
-        axis.title.x = element_text(size = 12),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
         axis.title.y = element_text(size = 12),
         axis.text.y = element_text(size = 10),
         legend.position = "none", # remove legend
@@ -266,6 +275,12 @@ weight_plot <- calcification %>%
 weight_plot
 
 
+QI_I <- surface_plot / volume_plot / weight_plot
+# save plot
+QI_I 
+ggsave("out/QI_I_se.png", plot = QI_I,
+       scale = 1, width = 16, height = 20, units = c("cm"),
+       dpi = 600, limitsize = TRUE) 
 
 ### --- 4.2.4. Necrosis --------------------------------------------------------
 # level treatment, important for visualisation 
@@ -285,6 +300,7 @@ color_scheme_2 <- c("#540B0E", "#9E2A2B", "#E09F3E", "#FFED85", "#4A8696")
 necrosis_2 <- necrosis %>%
   filter(cat != "none")
 
+
 necro_plot <- necrosis_2 %>% 
   filter(tp =="3") %>% 
   ggplot(aes(x=treat, y=prop, color = fct_rev(treat)))+
@@ -297,7 +313,7 @@ necro_plot <- necrosis_2 %>%
   scale_x_discrete(labels = treat_labs) +
   scale_y_continuous(limits = c(0, 100)) +
   labs(x = expression(paste("Treatment ", mg, "·", L^-1)),
-       y = "Necrosis (%)",
+       y = "Fragments with necrosis (%)",
        title = "") +
   # design theme
   theme_classic() +
@@ -322,7 +338,7 @@ necro_plot
 
 
 # bring all growth plots together
-growth_plot <- surface_plot / volume_plot / weight_plot / necro_plot
+# growth_plot <- surface_plot / volume_plot / weight_plot / necro_plot
 
 # safe all growth plots as one
 # ggsave("out/growth.png", plot = growth_plot,
@@ -336,7 +352,57 @@ growth_plot <- surface_plot / volume_plot / weight_plot / necro_plot
 Polyps_wo0 <-  Polyps %>%
   # select everything but the timepoint before the treatment
   filter(tp!="0")
-polyps <- ggplot(Polyps_wo0, aes(x = tp, y = ranks)) +
+Polyps_wo0$conc <- as.character(Polyps_wo0$conc)
+Polyps_rev <- Polyps_wo0 %>%
+  # separate by species, concentration and timepoint
+  group_by(spec, conc, tp) %>%
+  # ignore NAs
+  na.omit() %>% 
+  # use mean
+  summarise(mean = mean(ranks),
+            # include sd
+            sd = sd(ranks),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>%
+  ggplot() + 
+  facet_grid( ~ spec) +
+  geom_line(aes(x = tp, y = mean, group = conc, color = conc), 
+            size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) + 
+  scale_color_manual(values = color_scheme) +
+  geom_errorbar(aes(x = tp, ymin = mean-se, ymax = mean+se, 
+                    color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
+                position = position_dodge(width = 0.2)) +
+  geom_point(aes(x = tp, y = mean, color = conc), 
+             position = position_dodge(width=0.2), size = 1.5) +
+  labs(color = "Treatment [mg/l]", fill = "Treatment [mg/l]") +
+  ylab("Mean polyp activity") + 
+ # xlab("Weeks of exposure") +
+  labs(color = expression(paste("Treatment ", mg, "·", L^-1)), 
+       fill = expression(paste("Treatment ", mg, "·", L^-1))) +
+  # design theme
+  theme_classic() +
+  theme(panel.background = element_rect(color = "black"),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        strip.text.x = element_blank(), # remove species labels
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.position = "none",
+        plot.margin = margin(t = 2,  # Top margin
+                             r = 2,  # Right margin
+                             l = 2,  # Left margin
+                             b = 2)) # Bottom margin)
+
+# show plot
+Polyps_rev
+
+
+'polyps <- ggplot(Polyps_wo0, aes(x = tp, y = ranks)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = ranks, group = treat, color = treat, fill = treat)) + 
@@ -375,25 +441,66 @@ polyps
 #        scale = 1, width = 18, height = 6, units = c("cm"),
 #        dpi = 600, limitsize = TRUE)  
 
-QI_I <- surface_plot / volume_plot / weight_plot
-# save plot
-ggsave("out/QI_I.png", plot = QI_I,
-       scale = 1, width = 16, height = 20, units = c("cm"),
-       dpi = 600, limitsize = TRUE) 
+
 
 QI_II <- necro_plot / polyps
+QI_II 
 # save plot
 ggsave("out/QI_II.png", plot = QI_II,
        scale = 1, width = 16, height = 20, units = c("cm"),
-       dpi = 600, limitsize = TRUE) 
+       dpi = 600, limitsize = TRUE) '
 
  
 
 ## ---- 4.4. Photosynthetic efficiency -----------------------------------------
 ### --- 4.4.1. Effective quantum yield -----------------------------------------
 # use standardized (each fragment to it's mean value at t0) values
+YII_relative$conc <- as.character(YII_relative$conc)
+YII_rev <- YII_relative %>%
+  # separate by species, concentration and timepoint
+  group_by(spec, conc, tp) %>%
+  # ignore NAs
+  na.omit() %>% 
+  # use mean
+  summarise(mean = mean(relativeYII),
+            # include sd
+            sd = sd(relativeYII),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>%
+  ggplot() + 
+  facet_grid( ~ spec) +
+  geom_line(aes(x = tp, y = mean, group = conc, color = conc), 
+            size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) + 
+  scale_color_manual(values = color_scheme) +
+  geom_errorbar(aes(x = tp, ymin = mean-se, ymax = mean+se, 
+                    color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
+                position = position_dodge(width = 0.2)) +
+  geom_point(aes(x = tp, y = mean, color = conc), 
+             position = position_dodge(width=0.2), size = 1.5) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
+  # scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+  #  scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+  ylab("Relative Y(II)") +
+ # xlab("Weeks of exposure") +
+  labs(color = expression(paste("Treatment ", mg, "·", L^-1)), fill = expression(paste("Treatment ", mg, "·", L^-1))) +
+  # create design
+  theme_classic() +
+  theme(panel.background = element_rect(color = "black"),
+        strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.position = "none")
 
-YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
+# show plot
+YII_rev
+
+'YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = relativeYII, group = treat, color = treat, fill = treat)) + 
@@ -417,7 +524,7 @@ YII_plot <- ggplot(YII_relative, aes(x = tp, y = relativeYII)) +
         legend.position = "top")
 
 # show plot
-YII_plot
+YII_plot'
 
 
 ### --- 4.4.2. rETR ------------------------------------------------------------
@@ -425,7 +532,50 @@ YII_plot
 # exclude t0
 rETRmax <- subset(rETR_i, tp!= "0")
 
-rETRmax_plot <- ggplot(rETRmax, aes(x = tp, y = rETRmax)) +
+rETRmax$conc <- as.character(rETRmax$conc)
+rETRmax_rev <- rETRmax %>%
+  # separate by species, concentration and timepoint
+  group_by(spec, conc, tp) %>%
+  # ignore NAs
+  na.omit() %>% 
+  # use mean
+  summarise(mean = mean(rETRmax),
+            # include sd
+            sd = sd(rETRmax),
+            # include se
+            n = n(),
+            se = sd / sqrt(n)) %>%
+  ggplot() + 
+  facet_grid( ~ spec) +
+  geom_line(aes(x = tp, y = mean, group = conc, color = conc), 
+            size = 0.8, alpha = 0.8, linetype = 'longdash', position=position_dodge(width=0.2)) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) + 
+  scale_color_manual(values = color_scheme) +
+  geom_errorbar(aes(x = tp, ymin = mean-se, ymax = mean+se, 
+                    color = conc, linetype = NULL, width = 0.2), size = 1, alpha = 0.95,
+                position = position_dodge(width = 0.2)) +
+  geom_point(aes(x = tp, y = mean, color = conc), 
+             position = position_dodge(width=0.2), size = 1.5) +
+  scale_x_continuous(labels= c("4", "8", "12"), breaks = c(1, 2, 3)) +
+ # scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+#  scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+  ylab("rETRmax") + 
+  xlab("Weeks of exposure") +
+  labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
+  theme_classic() +
+  theme(panel.background = element_rect(color = "black"),
+        strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none")
+
+# show plot
+rETRmax_rev
+
+'rETRmax_plot <- ggplot(rETRmax, aes(x = tp, y = rETRmax)) +
   facet_grid( ~ spec, 
               labeller = labeller(spec = spec_labs)) +
   geom_smooth(aes(x = tp, y = rETRmax, group = treat, color = treat, fill = treat)) + 
@@ -457,8 +607,15 @@ PAM_plot
 # save plot
 ggsave("out/PAM_plot_relativeYII.png", plot = PAM_plot,
        scale = 1, width = 12, height = 14, units = c("cm"),
-       dpi = 600, limitsize = TRUE)  
+       dpi = 600, limitsize = TRUE)  '
 
+
+QI_rev <- surface_plot / volume_plot / weight_plot / Polyps_rev / YII_rev / rETRmax_rev / necro_plot
+QI_rev
+# save plot
+ggsave("out/QI_rev.png", plot = QI_rev,
+       scale = 1, width = 16, height = 40, units = c("cm"),
+       dpi = 600, limitsize = TRUE) 
 
 
 ## ---- 4.5. Correlation graph -------------------------------------------------
@@ -599,7 +756,7 @@ calcification_all <-  calcification %>%
          conc = as.numeric(conc)) 
 
 # write it into .csv
-write_csv2(calcification_all, "processed/calcification_all.csv")
+#write_csv2(calcification_all, "processed/calcification_all.csv")
 
 calc_cor <- ggplot(calcification_all, aes(conc, value, color = as.factor(conc))) +
   facet_grid(parameter~spec, scales="free", 
@@ -659,7 +816,7 @@ necrosis_all <- necrosis_all %>%
   dplyr::select(-necro_occured, -treatment, -col, -tank, -tp, -treat)
 
 # write it into .csv
-write_csv2(necrosis_all, "processed/necrosis_all.csv")
+#write_csv2(necrosis_all, "processed/necrosis_all.csv")
 
 
 necro_cor <- ggplot(necrosis_all, aes(conc, value, color = as.factor(conc))) +
@@ -2646,7 +2803,7 @@ ggsave("out/gam_correlation.png", plot = gamplots,
   
 }
 
-#without colors
+#Fig 5 ------
 {
   surface_s <- surface_all %>%
     mutate(x_axis = case_when(conc == "0" ~ "1",
@@ -3397,8 +3554,8 @@ ggsave("out/gam_correlation.png", plot = gamplots,
   
   
   # save graph
-  ggsave("out/gam_correlation_smooth.png", plot = gamplots,
-         scale = 1, width = 10, height = 30, units = c("cm"),
+  ggsave("out/proof_gam_correlation_smooth.png", plot = gamplots,
+         scale = 1, width = 10, height = 32, units = c("cm"),
          dpi = 600, limitsize = TRUE)  
   
   
@@ -3634,8 +3791,11 @@ color_scheme <- c("#4A8696", "#FFED85", "#E09F3E", "#9E2A2B", "#540B0E")
 alphavalues <- c(0.005, 0.3, 0.6, 1)
 
 ## ---- 5.1. MP concentrations -------------------------------------------------
+Concentrations <- read_csv2("in/Concentration_newformat.csv") %>%
+  mutate(per_L = ((count/volume)*1000),
+         tank = as.character(tank))
 Conc_curve <- ggplot(Concentrations, aes(x = days, y = per_L)) +
-  geom_smooth(aes(x = days, y = per_L, group = conc, color = conc, fill = conc)) + 
+  geom_smooth(aes(x = days, y = per_L, group = conc, color = conc, fill = conc)) +
   # brings lines under the boxplots to see changes over time
   scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
   scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
@@ -3659,6 +3819,28 @@ Conc_curve
 ggsave("out/Concentrations.png", plot = Conc_curve,
        scale = 1, width = 16, height = 18, units = c("cm"),
        dpi = 600, limitsize = TRUE)
+
+ggplot(Concentrations, aes(x = conc, y = per_L)) +
+ # geom_point(aes(color = factor(Sepal.Width)))
+  geom_boxplot(aes(x = conc, y = per_L, color = conc)) +
+  # brings lines under the boxplots to see changes over time
+  scale_color_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+  scale_fill_manual(values = color_scheme, labels=c('0', '0.1', '1', '10', '100')) +
+  scale_y_continuous(trans='log') +
+  ylab("Particles per litre") +
+  xlab("Concentration") +
+  labs(color = "Treatment (mg/l)", fill = "Treatment (mg/l)") +
+  theme_classic() +
+  theme(panel.background = element_rect(color = "black"),
+        strip.background = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.position = "top")
+
 
 # display relationship between added mg/L and measured ppl
 Concentrations_mean <-
